@@ -11,6 +11,11 @@ function describeError(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+/** Matches how the gate compares ids, so the panel cannot store two entries it treats as one. */
+function sameId(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 /** Admin-only: search identities and edit the allow-list that gates the hub. */
 export function AccessPanel({ service, onClose }: { service: AccessPanelService; onClose: () => void }): JSX.Element {
   const [entries, setEntries] = useState<AccessEntry[]>([]);
@@ -28,17 +33,41 @@ export function AccessPanel({ service, onClose }: { service: AccessPanelService;
   // not clobber what the user is currently looking at.
   const latestSearchSeq = useRef(0);
 
-  useEffect(() => {
-    void (async () => {
+  async function loadList(): Promise<void> {
+    try {
       const list = await service.readList();
       if (list === null) {
         setListUnreadable(true);
         setEntries([]);
       } else {
+        setListUnreadable(false);
         setEntries(list.entries);
       }
-    })();
+    } catch {
+      // A rejecting service must land in the same state as an unreadable list, or Save
+      // would stay enabled over entries the admin never saw (see C3).
+      setListUnreadable(true);
+      setEntries([]);
+    }
+  }
+
+  useEffect(() => {
+    void loadList();
   }, [service]);
+
+  /** The only action allowed to replace an unreadable list, so it is deliberate and labelled. */
+  async function createList(): Promise<void> {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await service.writeList({ entries: [] });
+      await loadList();
+    } catch (e) {
+      setSaveError(describeError(e));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function runSearch(q: string): Promise<void> {
     setQuery(q);
@@ -62,14 +91,18 @@ export function AccessPanel({ service, onClose }: { service: AccessPanelService;
   }
 
   function addEntry(entry: AccessEntry): void {
-    if (entries.some((e) => e.id === entry.id)) return;
+    if (isListed(entry.id)) return;
     setEntries([...entries, entry]);
     setSaved(false);
   }
 
   function removeEntry(id: string): void {
-    setEntries(entries.filter((e) => e.id !== id));
+    setEntries(entries.filter((e) => sameId(e.id, id) === false));
     setSaved(false);
+  }
+
+  function isListed(id: string): boolean {
+    return entries.some((e) => sameId(e.id, id));
   }
 
   async function save(): Promise<void> {
@@ -100,6 +133,15 @@ export function AccessPanel({ service, onClose }: { service: AccessPanelService;
       {listUnreadable ? (
         <div className="error-box">
           Could not read the current access list. Saving is disabled so the stored list is not overwritten.
+          <div className="access-panel-actions">
+            <button onClick={() => void createList()} disabled={saving}>
+              Create a new access list
+            </button>
+            <span className="hint">
+              This replaces whatever is stored with an empty list — everyone will have access until you add
+              entries.
+            </span>
+          </div>
         </div>
       ) : (
         <div className="access-panel-status">{statusText}</div>
@@ -117,7 +159,7 @@ export function AccessPanel({ service, onClose }: { service: AccessPanelService;
             <li key={r.id}>
               <span>{r.name}</span>
               <span className="access-kind">{r.kind}</span>
-              <button onClick={() => addEntry(r)} disabled={entries.some((e) => e.id === r.id)}>
+              <button onClick={() => addEntry(r)} disabled={isListed(r.id)}>
                 Add
               </button>
             </li>

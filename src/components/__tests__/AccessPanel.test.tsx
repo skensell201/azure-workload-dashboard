@@ -47,6 +47,74 @@ describe('AccessPanel', () => {
     expect((getByText('Save') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it('treats a rejected read as unreadable rather than as an empty list', async () => {
+    const { getByText, queryByText } = render(
+      <AccessPanel
+        service={fakeService({
+          readList: async () => {
+            throw new Error('storage down');
+          },
+        })}
+        onClose={() => {}}
+      />
+    );
+    await waitFor(() => expect(getByText(/Could not read the current access list/)).toBeTruthy());
+    expect(queryByText(/Everyone has access/)).toBeNull();
+    expect((getByText('Save') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('offers to create a list only when the stored one could not be read', async () => {
+    const { queryByText } = render(<AccessPanel service={fakeService()} onClose={() => {}} />);
+    await waitFor(() => expect(queryByText(/Everyone has access/)).toBeTruthy());
+    expect(queryByText('Create a new access list')).toBeNull();
+  });
+
+  it('creating a new list writes an empty one, re-reads it, and leaves Save disabled meanwhile', async () => {
+    const written: AccessList[] = [];
+    let stored: AccessList | null = null;
+    const { getByText } = render(
+      <AccessPanel
+        service={fakeService({
+          readList: async () => stored,
+          writeList: async (list) => {
+            written.push(list);
+            stored = list;
+          },
+        })}
+        onClose={() => {}}
+      />
+    );
+    await waitFor(() => expect(getByText('Create a new access list')).toBeTruthy());
+    expect((getByText('Save') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(getByText('Create a new access list'));
+
+    await waitFor(() => expect(getByText(/Everyone has access/)).toBeTruthy());
+    expect(written).toEqual([{ entries: [] }]);
+    expect((getByText('Save') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('treats identity ids case-insensitively, as the access gate does', async () => {
+    const list: AccessList = { entries: [{ id: 'ABC-1', name: 'Alice', kind: 'user' }] };
+    const { getByText, getAllByText } = render(
+      <AccessPanel
+        service={fakeService({
+          readList: async () => list,
+          searchIdentities: async () => [{ id: 'abc-1', name: 'Alice', kind: 'user' }],
+        })}
+        onClose={() => {}}
+      />
+    );
+    await waitFor(() => expect(getByText(/1 entry|1 entries/)).toBeTruthy());
+
+    fireEvent.change(getByText('Access').parentElement!.parentElement!.querySelector('input')!, {
+      target: { value: 'ali' },
+    });
+
+    await waitFor(() => expect(getAllByText('Alice').length).toBeGreaterThan(1));
+    expect((getByText('Add') as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('searching renders results with an Add action', async () => {
     const results: AccessEntry[] = [{ id: 'u2', name: 'Bob', kind: 'user' }];
     const { getByPlaceholderText, getByText } = render(

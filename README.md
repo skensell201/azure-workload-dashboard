@@ -70,7 +70,15 @@ transitively).
   unavailable), the hub denies everyone except collection administrators and shows an
   explicit error instead of the denial sentence, so an admin can still get in and fix
   it. This never falls back to per-browser storage — a per-browser fallback would let
-  anyone self-authorise — and it never fails open.
+  anyone self-authorise — and it never fails open. In that state **Save is disabled**, so
+  a list that could not be read cannot be silently overwritten; the panel instead offers
+  **Create a new access list**, a deliberate action that stores an empty list (and
+  therefore opens the hub to everyone until entries are added).
+- **On a fresh install** the allow-list document does not exist yet. Whether that reads
+  as "absent" (everyone allowed) or as "unreadable" depends on how this server reports a
+  missing document, so ordinary users may see the denial message until an administrator
+  opens the Access panel once and uses **Create a new access list**. Doing that on day one
+  is the recommended first step regardless.
 - **Changing `scopes` in `vss-extension.json`** (as this release does, adding
   `vso.extension_data`/`vso.extension_data_write` so the allow-list can actually be read
   and written) forces Azure DevOps Server to re-prompt for authorisation the next time the
