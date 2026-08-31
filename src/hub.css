@@ -7,12 +7,14 @@ body { font-family: "Segoe UI", sans-serif; font-size: 14px; margin: 0; color: #
 .warning { background: #fff4ce; border: 1px solid #ffb900; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
 .error-box { background: #fde7e9; border: 1px solid #d13438; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
 .empty { color: #605e5c; padding: 24px 0; }
+.matrix-scroll { overflow: auto; max-height: 70vh; }
 table.matrix { border-collapse: collapse; width: 100%; }
 table.matrix th, table.matrix td { border: 1px solid #edebe9; padding: 6px 10px; text-align: right; white-space: nowrap; }
 table.matrix th:first-child, table.matrix td:first-child { text-align: left; }
 table.matrix thead th { background: #f3f2f1; position: sticky; top: 0; }
 tr.person-row { cursor: pointer; }
 tr.person-row:hover { background: #f3f2f1; }
+.twisty { color: #605e5c; }
 td.total { font-weight: 600; }
 tfoot td { font-weight: 600; background: #f3f2f1; }
 table.task-list { width: 100%; border-collapse: collapse; }

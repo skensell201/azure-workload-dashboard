@@ -37,4 +37,13 @@ describe('MatrixTable', () => {
     const { getAllByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
     expect(getAllByText('—').length).toBe(1);
   });
+
+  it('rounds accumulated float hours for display', () => {
+    const m = buildMatrix([
+      task({ id: 1, originalEstimate: 8, completedWork: 0.3 }),
+      task({ id: 2, title: 'Write docs', originalEstimate: 7.5, completedWork: 0.6 }),
+    ]);
+    const { getAllByText } = render(<MatrixTable matrix={m} baseUrl="http://s" />);
+    expect(getAllByText('15.5 / 0.9').length).toBeGreaterThan(0);
+  });
 });
