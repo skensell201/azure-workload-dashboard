@@ -13,6 +13,18 @@ items' `Microsoft.VSTS.Scheduling.OriginalEstimate` and
 or estimate hours itself. Each viewer only sees the projects they already have
 access to.
 
+The `Total` column sits immediately after the name, so the number that matters
+most stays visible however many projects the collection has.
+
+## Picking people
+
+The search box finds people by name. **People** opens a picker listing everyone
+with tasks in the window; tick as many as you need and the table, its totals and
+both exports narrow to exactly those people. An explicit selection wins over the
+search text, so you can keep searching for the next person to add without losing
+the ones already ticked. `Clear selection` goes back to showing everyone the
+search matches.
+
 ## Export
 
 **CSV** writes the matrix exactly as displayed, including the name filter, with a

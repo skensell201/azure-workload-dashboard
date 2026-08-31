@@ -28,28 +28,28 @@ describe('matrixToTable', () => {
     const t = matrixToTable(matrix);
     expect(t.headers).toEqual([
       'Person',
+      'Total — Original Estimate',
+      'Total — Completed',
       'A — Original Estimate',
       'A — Completed',
       'B — Original Estimate',
       'B — Completed',
-      'Total — Original Estimate',
-      'Total — Completed',
     ]);
   });
 
   it('emits numbers, not formatted strings', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[0]).toEqual(['User One', 8, 2, 16, 4, 24, 6]);
+    expect(t.rows[0]).toEqual(['User One', 24, 6, 8, 2, 16, 4]);
   });
 
   it('leaves a project the person has no tasks in blank rather than zero', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[1]).toEqual(['User Two', null, null, 40, 20, 40, 20]);
+    expect(t.rows[1]).toEqual(['User Two', 40, 20, null, null, 40, 20]);
   });
 
   it('appends the totals row', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[t.rows.length - 1]).toEqual(['Total', 8, 2, 56, 24, 64, 26]);
+    expect(t.rows[t.rows.length - 1]).toEqual(['Total', 64, 26, 8, 2, 56, 24]);
   });
 });
 

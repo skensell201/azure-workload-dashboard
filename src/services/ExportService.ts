@@ -8,28 +8,28 @@ const BOM = '﻿';
 export function matrixToTable(matrix: Matrix): Table {
   const headers = [
     'Person',
-    ...matrix.projects.flatMap((p) => [`${p} — Original Estimate`, `${p} — Completed`]),
     'Total — Original Estimate',
     'Total — Completed',
+    ...matrix.projects.flatMap((p) => [`${p} — Original Estimate`, `${p} — Completed`]),
   ];
   const rows: CellValue[][] = matrix.rows.map((r) => [
     r.name,
+    r.total.oe,
+    r.total.completed,
     // A project the person has no tasks in stays blank: zero would read as "planned nothing".
     ...matrix.projects.flatMap((p) => {
       const cell = r.cells.get(p);
       return cell ? [cell.oe, cell.completed] : [null, null];
     }),
-    r.total.oe,
-    r.total.completed,
   ]);
   rows.push([
     'Total',
+    matrix.grandTotal.oe,
+    matrix.grandTotal.completed,
     ...matrix.projects.flatMap((p) => {
       const cell = matrix.projectTotals.get(p);
       return cell ? [cell.oe, cell.completed] : [null, null];
     }),
-    matrix.grandTotal.oe,
-    matrix.grandTotal.completed,
   ]);
   return { headers, rows };
 }

@@ -41,6 +41,11 @@ function renderApp(result: Partial<LoadResult>) {
   return render(<App orchestrator={stubOrchestrator(result)} baseUrl="http://s" />);
 }
 
+/** Names of the matrix rows, which the picker's own labels would otherwise be confused with. */
+function rowNames(container: HTMLElement): string[] {
+  return [...container.querySelectorAll('.person-name')].map((el) => el.textContent ?? '');
+}
+
 describe('App', () => {
   it('scopes projects and totals to the filtered person', async () => {
     const { getByPlaceholderText, getByText, getAllByText, queryByText } = renderApp({
@@ -49,7 +54,7 @@ describe('App', () => {
     });
     await waitFor(() => expect(getByText('User One')).toBeTruthy());
 
-    fireEvent.change(getByPlaceholderText('Filter by name…'), { target: { value: 'one' } });
+    fireEvent.change(getByPlaceholderText('Find person…'), { target: { value: 'one' } });
 
     // Project B belongs only to the filtered-out person, so its column disappears
     // and every total shows User One's hours, not the collection's.
@@ -59,14 +64,48 @@ describe('App', () => {
     expect(queryByText('48 / 22')).toBeNull();
   });
 
-  it('says nobody matches the filter instead of claiming the window is empty', async () => {
+  it('says nobody matches the search instead of claiming the window is empty', async () => {
     const { getByPlaceholderText, getByText, queryByText } = renderApp({ tasks: twoPeople, projectCount: 2 });
     await waitFor(() => expect(getByText('User One')).toBeTruthy());
 
-    fireEvent.change(getByPlaceholderText('Filter by name…'), { target: { value: 'nobody here' } });
+    fireEvent.change(getByPlaceholderText('Find person…'), { target: { value: 'nobody here' } });
 
-    expect(getByText(/Nobody matches the filter/)).toBeTruthy();
+    expect(getByText(/Nobody matches the search/)).toBeTruthy();
     expect(queryByText(/No assigned tasks/)).toBeNull();
+  });
+
+  it('narrows the table to the people checked in the picker, search text notwithstanding', async () => {
+    const three = [
+      ...twoPeople,
+      task({ id: 3, assigneeKey: 'u3', assigneeName: 'Third Person', project: 'C', originalEstimate: 4, completedWork: 1 }),
+    ];
+    const { container, getByText, getByLabelText, getByPlaceholderText, queryByText } = renderApp({
+      tasks: three,
+      projectCount: 3,
+    });
+    await waitFor(() => expect(getByText('User One')).toBeTruthy());
+
+    fireEvent.click(getByText(/^People/));
+    fireEvent.click(getByLabelText('User One'));
+    fireEvent.click(getByLabelText('Third Person'));
+    // A leftover search must not narrow an explicit selection any further.
+    fireEvent.change(getByPlaceholderText('Find person…'), { target: { value: 'user one' } });
+
+    expect(rowNames(container)).toEqual(['Third Person', 'User One']);
+    // Project B belongs only to the unselected person, so its column goes away.
+    expect(queryByText('B')).toBeNull();
+  });
+
+  it('clears the selection and goes back to searching everyone', async () => {
+    const { container, getByText, getByLabelText } = renderApp({ tasks: twoPeople, projectCount: 2 });
+    await waitFor(() => expect(getByText('User One')).toBeTruthy());
+
+    fireEvent.click(getByText(/^People/));
+    fireEvent.click(getByLabelText('User One'));
+    expect(rowNames(container)).toEqual(['User One']);
+
+    fireEvent.click(getByText('Clear selection'));
+    expect(rowNames(container)).toEqual(['User One', 'User Two']);
   });
 
   it('reports an empty window when the load genuinely returned no tasks', async () => {

@@ -3,8 +3,10 @@ import { LoadOrchestrator, LoadResult } from '../services/LoadOrchestrator';
 import { buildMatrix } from '../services/Aggregation';
 import { defaultWindow } from '../services/window';
 import { DateWindow } from '../models/types';
+import { peopleOf, selectTasks } from '../services/people';
 import { MatrixTable } from './MatrixTable';
 import { ExportButtons } from './ExportButtons';
+import { PeoplePicker } from './PeoplePicker';
 
 export function describeError(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -22,6 +24,8 @@ export function App({
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<LoadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   async function load(w: DateWindow): Promise<void> {
     if (!w.start || !w.end || w.start > w.end) {
@@ -48,15 +52,23 @@ export function App({
   }, []);
 
   const needle = filter.trim().toLowerCase();
+  const people = useMemo(() => (result ? peopleOf(result.tasks) : []), [result]);
   const matrix = useMemo(() => {
     if (!result) return null;
-    // Filtering before aggregation keeps columns and totals scoped to the visible people.
-    const tasks = needle ? result.tasks.filter((t) => t.assigneeName.toLowerCase().includes(needle)) : result.tasks;
-    return buildMatrix(tasks);
-  }, [result, needle]);
+    // Narrowing before aggregation keeps columns and totals scoped to the visible people,
+    // which is also what the exports are built from.
+    return buildMatrix(selectTasks(result.tasks, selected, filter));
+  }, [result, selected, filter]);
+
+  function togglePerson(key: string): void {
+    const next = new Set(selected);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setSelected(next);
+  }
 
   const noRows = result !== null && matrix !== null && matrix.rows.length === 0 && progress === null;
-  const filteredEverythingOut = noRows && needle !== '' && result.tasks.length > 0;
+  const narrowedEverythingOut = noRows && (needle !== '' || selected.size > 0) && result.tasks.length > 0;
 
   return (
     <div className="app">
@@ -70,15 +82,28 @@ export function App({
         <button onClick={() => void load(win)} disabled={progress !== null}>Refresh</button>
         <input
           type="text"
-          placeholder="Filter by name…"
+          placeholder="Find person…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
+        <button onClick={() => setPickerOpen(!pickerOpen)} disabled={people.length === 0}>
+          People{selected.size > 0 ? ` (${selected.size})` : ''}
+        </button>
         {result && matrix && <ExportButtons matrix={matrix} window={result.window} />}
         <span className="hint">
           each cell: planned (Original Estimate) / done (Completed Work), in hours
         </span>
       </div>
+      {pickerOpen && people.length > 0 && (
+        <PeoplePicker
+          people={people}
+          selected={selected}
+          search={filter}
+          onToggle={togglePerson}
+          onClear={() => setSelected(new Set())}
+          onSelectShown={(keys) => setSelected(new Set([...selected, ...keys]))}
+        />
+      )}
       {progress && <div className="progress">Loaded {progress.done} of {progress.total} projects</div>}
       {error && <div className="error-box">{error}</div>}
       {result && result.allProjectsFailed && (
@@ -104,10 +129,14 @@ export function App({
           </div>
         );
       })()}
-      {filteredEverythingOut && (
-        <div className="empty">Nobody matches the filter “{filter.trim()}”.</div>
+      {narrowedEverythingOut && (
+        <div className="empty">
+          {selected.size > 0
+            ? 'The selected people have no tasks in this window.'
+            : `Nobody matches the search “${filter.trim()}”.`}
+        </div>
       )}
-      {noRows && !filteredEverythingOut && !result.allProjectsFailed && result.projectCount > 0 && (
+      {noRows && !narrowedEverythingOut && !result.allProjectsFailed && result.projectCount > 0 && (
         <div className="empty">No assigned tasks in the selected date window.</div>
       )}
       {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} baseUrl={baseUrl} />}

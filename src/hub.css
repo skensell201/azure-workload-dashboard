@@ -42,6 +42,36 @@ body {
 .warning { background: rgba(255, 185, 0, 0.12); border-color: rgba(255, 185, 0, 0.8); }
 .error-box { background: rgba(209, 52, 56, 0.12); border-color: rgba(209, 52, 56, 0.8); }
 
+.people-picker {
+  border: 1px solid var(--wd-border);
+  background: var(--wd-shade);
+  border-radius: 2px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.people-picker-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.people-picker-actions button {
+  font: inherit;
+  color: var(--wd-text);
+  background: var(--wd-bg);
+  border: 1px solid var(--wd-border);
+  border-radius: 2px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.people-picker-actions button:disabled { cursor: default; opacity: 0.6; }
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow: auto;
+  /* Many people fit in a few columns instead of one long scroll. */
+  columns: 260px;
+}
+.people-list li { break-inside: avoid; }
+.people-list label { display: flex; gap: 6px; align-items: center; padding: 3px 0; cursor: pointer; }
+
 .matrix-scroll { overflow: auto; max-height: 70vh; }
 table.matrix { border-collapse: collapse; width: 100%; }
 table.matrix th, table.matrix td {

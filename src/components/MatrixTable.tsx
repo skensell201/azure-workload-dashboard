@@ -54,16 +54,16 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
         <thead>
           <tr>
             <th>Person</th>
+            <th className="total">
+              Total
+              <div className="col-legend">planned / done</div>
+            </th>
             {matrix.projects.map((p) => (
               <th key={p}>
                 {p}
                 <div className="col-legend">planned / done</div>
               </th>
             ))}
-            <th>
-              Total
-              <div className="col-legend">planned / done</div>
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -73,11 +73,11 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
                 <td>
                   <span className="twisty">{expanded.has(r.key) ? '▾' : '▸'}</span> <span className="person-name">{r.name}</span>
                 </td>
+                <td className="total">{fmt(r.total)}</td>
                 {matrix.projects.map((p) => {
                   const cell = r.cells.get(p);
                   return <td key={p}>{cell ? fmt(cell) : '—'}</td>;
                 })}
-                <td className="total">{fmt(r.total)}</td>
               </tr>
               {expanded.has(r.key) && <TaskRows row={r} colSpan={colSpan} baseUrl={baseUrl} />}
             </React.Fragment>
@@ -86,8 +86,8 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
         <tfoot>
           <tr>
             <td>Total</td>
-            {matrix.projects.map((p) => <td key={p}>{fmt(matrix.projectTotals.get(p)!)}</td>)}
             <td className="total">{fmt(matrix.grandTotal)}</td>
+            {matrix.projects.map((p) => <td key={p}>{fmt(matrix.projectTotals.get(p)!)}</td>)}
           </tr>
         </tfoot>
       </table>
