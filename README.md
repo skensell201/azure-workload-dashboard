@@ -49,6 +49,37 @@ and `— Completed`, rather than one `48 / 32` string, so the values can be summ
 A project a person has no tasks in is left blank rather than zero. Files are named
 after the loaded window, e.g. `workload-2026-08-31_2026-09-13.xlsx`.
 
+## Access
+
+The hub is gated by an allow-list of collection identities (users and, since LDAP/AD
+groups show up as ordinary collection identities, groups too — nested groups resolve
+transitively).
+
+- **An empty list means everyone has access.** This is the bootstrap: a fresh install
+  must not lock out the very administrator who has to configure it. As soon as the list
+  has at least one entry, the restriction becomes active for everyone else.
+- **Members of `Project Collection Administrators`** always have access, list or no
+  list, and are the only ones who can manage it.
+- A user is let in if they are listed by identity id, or are a transitive member of a
+  listed group, or are a collection administrator.
+- Collection administrators see an **Access** button in the toolbar that opens a panel
+  to search identities and add or remove entries; **Save** writes the list.
+- A denied user sees one sentence, never an empty table or a stack trace:
+  *"You do not have access to Workload. Ask a collection administrator to grant it."*
+- **If the allow-list itself cannot be read** (the extension's data storage is
+  unavailable), the hub denies everyone except collection administrators and shows an
+  explicit error instead of the denial sentence, so an admin can still get in and fix
+  it. This never falls back to per-browser storage — a per-browser fallback would let
+  anyone self-authorise — and it never fails open.
+
+`vss-extension.json` also declares a `ms.vss-web.control-constraint` so a denied user's
+Boards navigation can hide the Workload hub entirely on hosts that honour it; this has
+not been verified against this on-prem host and may simply be ignored. Either way,
+**hiding the hub is UI-level gating, not a security boundary**: the extension reads data
+with the viewer's own access token, so anyone with project access can call the same REST
+APIs directly regardless of what the hub shows or hides. Real confidentiality comes from
+project permissions in Azure DevOps itself, not from this extension.
+
 ## Install
 
 1. Download the `.vsix` package from this repository's [GitHub Releases](../../releases).

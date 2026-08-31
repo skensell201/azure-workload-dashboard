@@ -102,3 +102,35 @@ table.task-list td {
   text-align: left;
 }
 table.task-list a { color: var(--communication-foreground, #0078d4); }
+
+.denied { padding: 24px 16px; color: var(--wd-text); }
+
+.access-panel {
+  border: 1px solid var(--wd-border);
+  background: var(--wd-shade);
+  border-radius: 2px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.access-panel-header { display: flex; justify-content: space-between; align-items: center; }
+.access-panel-header h3 { margin: 0; }
+.access-panel-status { color: var(--wd-muted); margin: 6px 0; }
+.access-panel input[type="text"] {
+  font: inherit;
+  color: var(--wd-text);
+  background: var(--wd-bg);
+  border: 1px solid var(--wd-border);
+  border-radius: 2px;
+  padding: 4px 8px;
+  min-width: 220px;
+  margin-bottom: 8px;
+}
+.access-search-results, .access-current-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.access-search-results li, .access-current-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+}
+.access-kind { color: var(--wd-muted); font-size: 11px; text-transform: uppercase; }
+.access-panel-actions { display: flex; gap: 8px; align-items: center; }

@@ -9,13 +9,20 @@
   "categories": ["Boards"],
   "targets": [{ "id": "Microsoft.TeamFoundation.Server", "version": "[17.0,)" }],
   "icons": { "default": "images/icon.png" },
-  "scopes": ["vso.work", "vso.project"],
+  "scopes": ["vso.work", "vso.project", "vso.identity"],
   "contributions": [
     {
       "id": "workload-dashboard-hub",
       "type": "ms.vss-web.hub",
       "targets": ["ms.vss-work-web.work-hub-group"],
-      "properties": { "name": "Workload", "uri": "dist/hub.html" }
+      "properties": { "name": "Workload", "uri": "dist/hub.html" },
+      "constraints": [{ "name": "workload-access-constraint" }]
+    },
+    {
+      "id": "workload-access-constraint",
+      "type": "ms.vss-web.control-constraint",
+      "targets": ["ms.vss-web.control-constraint"],
+      "properties": { "uri": "dist/hub.html" }
     }
   ],
   "files": [
