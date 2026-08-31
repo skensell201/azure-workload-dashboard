@@ -34,6 +34,14 @@ export function AccessGate({
         </div>
       );
     }
+    if (decision.reason === 'membership-unverified') {
+      return (
+        <div className="error-box">
+          Your group membership could not be checked, so access to Workload could not be confirmed.
+          Ask a collection administrator to add you directly.
+        </div>
+      );
+    }
     return <div className="denied">You do not have access to Workload. Ask a collection administrator to grant it.</div>;
   }
 

@@ -54,6 +54,24 @@ describe('AccessGate', () => {
     expect(queryByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeNull();
   });
 
+  it('renders a distinct sentence directing the user to a collection administrator when membership could not be checked', () => {
+    const { getByText, queryByText } = render(
+      <AccessGate
+        decision={{ allowed: false, reason: 'membership-unverified' }}
+        listUnreadable={false}
+        orchestrator={stubOrchestrator()}
+        baseUrl="http://s"
+        accessService={stubAccessService()}
+      />
+    );
+    expect(
+      getByText(
+        'Your group membership could not be checked, so access to Workload could not be confirmed. Ask a collection administrator to add you directly.'
+      )
+    ).toBeTruthy();
+    expect(queryByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeNull();
+  });
+
   it('renders the app without an Access button for an allowed non-admin', () => {
     const { getByText, queryByText } = render(
       <AccessGate

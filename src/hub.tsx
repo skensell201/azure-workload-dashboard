@@ -13,7 +13,7 @@ import { colorSchemeOf } from './services/theme';
 import { describeError } from './components/App';
 import { AccessGate } from './components/AccessGate';
 import { AccessService, AccessDocumentStore } from './services/AccessService';
-import { decideAccess } from './services/access';
+import { resolveAccess } from './services/resolveAccess';
 
 /**
  * Full id of the ms.vss-web.control-constraint contribution declared in vss-extension.json,
@@ -30,7 +30,11 @@ function followHostTheme(): void {
 }
 
 async function start(): Promise<void> {
-  await SDK.init();
+  // loaded: false so the host does not consider this page ready (and does not honour the
+  // navigation constraint below) until this function explicitly calls
+  // notifyLoadSucceeded() -- see I6. The default (loaded: true) would tell the host the
+  // page is ready before SDK.register() for the constraint below ever runs.
+  await SDK.init({ loaded: false });
   followHostTheme();
   const loc = await SDK.getService<ILocationService>(CommonServiceIds.LocationService);
   const baseUrl = (await loc.getServiceLocation()).replace(/\/$/, '');
@@ -56,14 +60,17 @@ async function start(): Promise<void> {
   const accessService = new AccessService(api, store);
 
   const user = SDK.getUser();
-  const [list, isAdmin] = await Promise.all([accessService.readList(), accessService.isCollectionAdmin(user.id)]);
-  // Skip the group-membership lookup once admin already grants access, or once there is
-  // no list to match against — decideAccess ignores userGroupIds in both cases anyway.
-  const userGroupIds = !isAdmin && list && list.entries.length > 0 ? await accessService.getUserGroupIds(user.id) : [];
-  const decision = decideAccess({ list, userId: user.id, isAdmin, userGroupIds });
+  const { decision, list } = await resolveAccess({ user, accessService });
 
   if (SDK.getContributionId() === CONSTRAINT_CONTRIBUTION_ID) {
-    SDK.register(CONSTRAINT_CONTRIBUTION_ID, () => ({ isMatch: () => decision.allowed }));
+    try {
+      SDK.register(CONSTRAINT_CONTRIBUTION_ID, () => ({ isMatch: () => decision.allowed }));
+    } catch (e) {
+      // Registration failing must not prevent notifyLoadSucceeded below (see I6) --
+      // an on-prem host that doesn't support this contribution type is a harmless no-op
+      // here; the in-hub AccessGate below is the real enforcement either way.
+      console.error('Workload Dashboard: failed to register the access constraint:', e);
+    }
     await SDK.notifyLoadSucceeded();
     return;
   }
@@ -78,6 +85,8 @@ async function start(): Promise<void> {
     />,
     document.getElementById('root')
   );
+  // Only after registration/first render does the host learn the page is ready (I6).
+  await SDK.notifyLoadSucceeded();
 }
 
 start().catch((e) => {
