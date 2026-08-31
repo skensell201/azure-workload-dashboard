@@ -5,7 +5,7 @@ Status: approved (design review passed in brainstorming session)
 
 ## Problem
 
-Managers (запрос от НО через Хаско Е. Н.) cannot see a specialist's planned load
+Managers cannot see a specialist's planned load
 across all Azure DevOps projects at once. Today they must open every project the
 person works in and sum sprint hours by hand. They want "one window": planned
 hours (Original Estimate) for a two-week sprint per specialist, across the whole

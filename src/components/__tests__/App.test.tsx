@@ -49,7 +49,7 @@ describe('App', () => {
     });
     await waitFor(() => expect(getByText('User One')).toBeTruthy());
 
-    fireEvent.change(getByPlaceholderText('Фильтр по имени…'), { target: { value: 'one' } });
+    fireEvent.change(getByPlaceholderText('Filter by name…'), { target: { value: 'one' } });
 
     // Project B belongs only to the filtered-out person, so its column disappears
     // and every total shows User One's hours, not the collection's.
@@ -63,14 +63,14 @@ describe('App', () => {
     const { getByPlaceholderText, getByText, queryByText } = renderApp({ tasks: twoPeople, projectCount: 2 });
     await waitFor(() => expect(getByText('User One')).toBeTruthy());
 
-    fireEvent.change(getByPlaceholderText('Фильтр по имени…'), { target: { value: 'нет такого' } });
+    fireEvent.change(getByPlaceholderText('Filter by name…'), { target: { value: 'nobody here' } });
 
-    expect(getByText(/Никто не подходит под фильтр/)).toBeTruthy();
-    expect(queryByText(/Нет задач с исполнителями/)).toBeNull();
+    expect(getByText(/Nobody matches the filter/)).toBeTruthy();
+    expect(queryByText(/No assigned tasks/)).toBeNull();
   });
 
   it('reports an empty window when the load genuinely returned no tasks', async () => {
     const { getByText } = renderApp({ tasks: [], projectCount: 2 });
-    await waitFor(() => expect(getByText(/Нет задач с исполнителями/)).toBeTruthy());
+    await waitFor(() => expect(getByText(/No assigned tasks/)).toBeTruthy());
   });
 });

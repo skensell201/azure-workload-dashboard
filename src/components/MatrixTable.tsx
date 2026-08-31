@@ -53,9 +53,9 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
       <table className="matrix">
         <thead>
           <tr>
-            <th>Специалист</th>
+            <th>Person</th>
             {matrix.projects.map((p) => <th key={p}>{p}</th>)}
-            <th>Итого</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +77,7 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
         </tbody>
         <tfoot>
           <tr>
-            <td>Итого</td>
+            <td>Total</td>
             {matrix.projects.map((p) => <td key={p}>{fmt(matrix.projectTotals.get(p)!)}</td>)}
             <td className="total">{fmt(matrix.grandTotal)}</td>
           </tr>

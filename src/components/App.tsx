@@ -24,7 +24,7 @@ export function App({
 
   async function load(w: DateWindow): Promise<void> {
     if (!w.start || !w.end || w.start > w.end) {
-      setError('Укажите корректный период: дата начала не позже даты окончания.');
+      setError('Enter a valid period: the start date must not be later than the end date.');
       setResult(null);
       setProgress(null);
       return;
@@ -36,7 +36,7 @@ export function App({
       const res = await orchestrator.load(w, (done, total) => setProgress({ done, total }));
       setResult(res);
     } catch (e) {
-      setError(`Не удалось загрузить данные: ${describeError(e)}`);
+      setError(`Failed to load data: ${describeError(e)}`);
     } finally {
       setProgress(null);
     }
@@ -61,50 +61,50 @@ export function App({
     <div className="app">
       <div className="toolbar">
         <label>
-          С <input type="date" value={win.start} onChange={(e) => setWin({ ...win, start: e.target.value })} />
+          From <input type="date" value={win.start} onChange={(e) => setWin({ ...win, start: e.target.value })} />
         </label>
         <label>
-          по <input type="date" value={win.end} onChange={(e) => setWin({ ...win, end: e.target.value })} />
+          to <input type="date" value={win.end} onChange={(e) => setWin({ ...win, end: e.target.value })} />
         </label>
-        <button onClick={() => void load(win)} disabled={progress !== null}>Обновить</button>
+        <button onClick={() => void load(win)} disabled={progress !== null}>Refresh</button>
         <input
           type="text"
-          placeholder="Фильтр по имени…"
+          placeholder="Filter by name…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
-        <span className="hint">в ячейке: Original Estimate / Completed, часы</span>
+        <span className="hint">cell: Original Estimate / Completed, hours</span>
       </div>
-      {progress && <div className="progress">Загружено проектов: {progress.done} из {progress.total}</div>}
+      {progress && <div className="progress">Loaded {progress.done} of {progress.total} projects</div>}
       {error && <div className="error-box">{error}</div>}
       {result && result.allProjectsFailed && (
         <div className="error-box">
-          Не удалось загрузить ни один проект — вероятно, истёк токен или сервер недоступен. Причина:{' '}
+          No project could be loaded — the token has probably expired or the server is unreachable. Reason:{' '}
           {[...new Set(result.skippedProjects.map((s) => s.reason))].join('; ')}
         </div>
       )}
       {result && !result.allProjectsFailed && result.skippedProjects.length > 0 && (
         <div className="warning">
-          Пропущены проекты: {result.skippedProjects.map((s) => `${s.name} (${s.reason})`).join(', ')}
+          Skipped projects: {result.skippedProjects.map((s) => `${s.name} (${s.reason})`).join(', ')}
         </div>
       )}
       {result && result.projectCount === 0 && (
-        <div className="warning">Не видно ни одного проекта — проверьте права доступа в коллекции.</div>
+        <div className="warning">No projects are visible — check your permissions in the collection.</div>
       )}
       {result && matrix && result.projectCount > 0 && !result.allProjectsFailed && (() => {
         const stale = result.window.start !== win.start || result.window.end !== win.end;
         return (
           <div className={`loaded-window${stale ? ' stale' : ''}`}>
-            Данные за период: {result.window.start} — {result.window.end}
-            {stale ? ' (окно изменено — нажмите «Обновить»)' : ''}
+            Data for: {result.window.start} — {result.window.end}
+            {stale ? ' (window changed — click Refresh)' : ''}
           </div>
         );
       })()}
       {filteredEverythingOut && (
-        <div className="empty">Никто не подходит под фильтр «{filter.trim()}».</div>
+        <div className="empty">Nobody matches the filter “{filter.trim()}”.</div>
       )}
       {noRows && !filteredEverythingOut && !result.allProjectsFailed && result.projectCount > 0 && (
-        <div className="empty">Нет задач с исполнителями в выбранном окне дат.</div>
+        <div className="empty">No assigned tasks in the selected date window.</div>
       )}
       {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} baseUrl={baseUrl} />}
     </div>

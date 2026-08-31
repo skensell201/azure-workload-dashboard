@@ -1150,9 +1150,9 @@ export function MatrixTable({ matrix, filter, baseUrl }: { matrix: Matrix; filte
     <table className="matrix">
       <thead>
         <tr>
-          <th>Специалист</th>
+          <th>Person</th>
           {matrix.projects.map((p) => <th key={p}>{p}</th>)}
-          <th>Итого</th>
+          <th>Total</th>
         </tr>
       </thead>
       <tbody>
@@ -1172,7 +1172,7 @@ export function MatrixTable({ matrix, filter, baseUrl }: { matrix: Matrix; filte
       </tbody>
       <tfoot>
         <tr>
-          <td>Итого</td>
+          <td>Total</td>
           {matrix.projects.map((p) => <td key={p}>{fmt(matrix.projectTotals.get(p)!)}</td>)}
           <td className="total">{fmt(matrix.grandTotal)}</td>
         </tr>
@@ -1254,27 +1254,27 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
     <div className="app">
       <div className="toolbar">
         <label>
-          С <input type="date" value={win.start} onChange={(e) => setWin({ ...win, start: e.target.value })} />
+          From <input type="date" value={win.start} onChange={(e) => setWin({ ...win, start: e.target.value })} />
         </label>
         <label>
-          по <input type="date" value={win.end} onChange={(e) => setWin({ ...win, end: e.target.value })} />
+          to <input type="date" value={win.end} onChange={(e) => setWin({ ...win, end: e.target.value })} />
         </label>
-        <button onClick={() => void load(win)} disabled={progress !== null}>Обновить</button>
+        <button onClick={() => void load(win)} disabled={progress !== null}>Refresh</button>
         <input
           type="text"
-          placeholder="Фильтр по имени…"
+          placeholder="Filter by name…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
-        <span className="hint">в ячейке: Original Estimate / Completed, часы</span>
+        <span className="hint">cell: Original Estimate / Completed, hours</span>
       </div>
-      {progress && <div className="progress">Загружено проектов: {progress.done} из {progress.total}</div>}
-      {error && <div className="error-box">Не удалось загрузить данные: {error}</div>}
+      {progress && <div className="progress">Loaded {progress.done} of {progress.total} projects</div>}
+      {error && <div className="error-box">Failed to load data: {error}</div>}
       {result && result.skippedProjects.length > 0 && (
-        <div className="warning">Нет доступа или ошибка в проектах: {result.skippedProjects.join(', ')}</div>
+        <div className="warning">Skipped projects: {result.skippedProjects.join(', ')}</div>
       )}
       {matrix && matrix.rows.length === 0 && !progress && (
-        <div className="empty">Нет задач с исполнителями в выбранном окне дат.</div>
+        <div className="empty">No assigned tasks in the selected date window.</div>
       )}
       {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} filter={filter} baseUrl={baseUrl} />}
     </div>
