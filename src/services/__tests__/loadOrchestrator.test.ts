@@ -47,6 +47,7 @@ describe('LoadOrchestrator', () => {
       completedWork: 3,
     });
     expect(result.skippedProjects).toEqual([]);
+    expect(result.allProjectsFailed).toBe(false);
   });
 
   it('skips a failing project and keeps the rest', async () => {
@@ -58,7 +59,22 @@ describe('LoadOrchestrator', () => {
     });
     const result = await new LoadOrchestrator(deps as never).load(win, () => {});
     expect(result.tasks.map((t) => t.project)).toEqual(['B']);
-    expect(result.skippedProjects).toEqual(['A']);
+    expect(result.skippedProjects).toEqual([{ name: 'A', reason: '403' }]);
+  });
+
+  it('reports every project failing', async () => {
+    const deps = makeDeps({
+      getIterationPathsIntersecting: async () => {
+        throw new Error('token expired');
+      },
+    });
+    const result = await new LoadOrchestrator(deps as never).load(win, () => {});
+    expect(result.tasks).toEqual([]);
+    expect(result.skippedProjects).toEqual([
+      { name: 'A', reason: 'token expired' },
+      { name: 'B', reason: 'token expired' },
+    ]);
+    expect(result.allProjectsFailed).toBe(true);
   });
 
   it('skips WIQL for projects with no intersecting iterations', async () => {

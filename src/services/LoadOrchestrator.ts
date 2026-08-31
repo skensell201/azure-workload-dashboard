@@ -14,9 +14,15 @@ export const TASK_FIELDS = [
   'Microsoft.VSTS.Scheduling.CompletedWork',
 ];
 
+export interface SkippedProject {
+  name: string;
+  reason: string;
+}
+
 export interface LoadResult {
   tasks: TaskItem[];
-  skippedProjects: string[];
+  skippedProjects: SkippedProject[];
+  allProjectsFailed: boolean;
 }
 
 interface Deps {
@@ -34,20 +40,28 @@ export class LoadOrchestrator {
 
   async load(win: DateWindow, onProgress: (done: number, total: number) => void): Promise<LoadResult> {
     const projects = await this.deps.projects.getProjects();
-    const skippedProjects: string[] = [];
+    const skippedProjects: SkippedProject[] = [];
     let done = 0;
     const perProject = await runBatched(projects, async (p: NamedRef) => {
       try {
         return await this.loadProject(p.name, win);
-      } catch {
-        skippedProjects.push(p.name);
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        // Keep the reason: on-prem 403/404s must be distinguishable from bugs in the mapper.
+        // eslint-disable-next-line no-console
+        console.warn(`Workload Dashboard: skipping project ${p.name}`, e);
+        skippedProjects.push({ name: p.name, reason });
         return [] as TaskItem[];
       } finally {
         done++;
         onProgress(done, projects.length);
       }
     });
-    return { tasks: perProject.flat(), skippedProjects };
+    return {
+      tasks: perProject.flat(),
+      skippedProjects,
+      allProjectsFailed: projects.length > 0 && skippedProjects.length === projects.length,
+    };
   }
 
   private async loadProject(project: string, win: DateWindow): Promise<TaskItem[]> {
