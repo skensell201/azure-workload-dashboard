@@ -93,4 +93,12 @@ start().catch((e) => {
   console.error('Workload Dashboard init failed:', e);
   const root = document.getElementById('root');
   if (root) root.textContent = `Failed to initialize Workload Dashboard: ${describeError(e)}`;
+  // The host is still showing its own loading overlay (see the loaded: false comment
+  // above) on top of the message we just wrote -- without this, any throw between
+  // SDK.init and notifyLoadSucceeded leaves that overlay up forever, hiding the error.
+  // A failure here must not replace the message above with a notify-call error, so it
+  // is swallowed after logging rather than left to reject unhandled.
+  SDK.notifyLoadFailed(describeError(e)).catch((notifyErr) => {
+    console.error('Workload Dashboard: failed to notify the host of the load failure:', notifyErr);
+  });
 });
