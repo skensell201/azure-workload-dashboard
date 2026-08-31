@@ -2,7 +2,9 @@ import { LoadOrchestrator } from '../LoadOrchestrator';
 
 const win = { start: '2026-09-01', end: '2026-09-14' };
 
-function makeDeps(over: Partial<Record<'getProjects' | 'getIterationPathsIntersecting' | 'queryTaskIds' | 'getFieldsBatch', unknown>>) {
+function makeDeps(
+  over: Partial<Record<'getProjects' | 'getIterationPathsIntersecting' | 'queryTaskIds' | 'getFieldsBatch' | 'getProjectMembers', unknown>>
+) {
   return {
     projects: {
       getProjects: (over.getProjects as never) ?? (async () => [{ id: '1', name: 'A' }, { id: '2', name: 'B' }]),
@@ -29,6 +31,9 @@ function makeDeps(over: Partial<Record<'getProjects' | 'getIterationPathsInterse
               },
             ])
           )),
+    },
+    teams: {
+      getProjectMembers: (over.getProjectMembers as never) ?? (async () => []),
     },
   };
 }
@@ -112,5 +117,58 @@ describe('LoadOrchestrator', () => {
     await new LoadOrchestrator(makeDeps({}) as never).load(win, (done, total) => seen.push([done, total]));
     expect(seen).toHaveLength(2);
     expect(seen[seen.length - 1]).toEqual([2, 2]);
+  });
+
+  it('returns the roster deduped across projects', async () => {
+    const deps = makeDeps({
+      getProjectMembers: async (projectId: string) =>
+        projectId === '1'
+          ? [{ key: 'u1', name: 'User One' }, { key: 'u2', name: 'User Two' }]
+          : [{ key: 'u2', name: 'User Two' }, { key: 'u3', name: 'User Three' }],
+    });
+    const result = await new LoadOrchestrator(deps as never).load(win, () => {});
+    expect([...result.roster].sort((a, b) => a.key.localeCompare(b.key))).toEqual([
+      { key: 'u1', name: 'User One' },
+      { key: 'u2', name: 'User Two' },
+      { key: 'u3', name: 'User Three' },
+    ]);
+  });
+
+  it('uses the project id, not the project name, to fetch members', async () => {
+    const seenIds: string[] = [];
+    const deps = makeDeps({
+      getProjectMembers: async (projectId: string) => {
+        seenIds.push(projectId);
+        return [];
+      },
+    });
+    await new LoadOrchestrator(deps as never).load(win, () => {});
+    expect(seenIds.sort()).toEqual(['1', '2']);
+  });
+
+  it('keeps a project’s tasks when only its member fetch fails, and does not mark it skipped', async () => {
+    const deps = makeDeps({
+      getProjectMembers: async (projectId: string) => {
+        if (projectId === '1') throw new Error('members 403');
+        return [{ key: 'u2', name: 'User Two' }];
+      },
+    });
+    const result = await new LoadOrchestrator(deps as never).load(win, () => {});
+    expect(result.tasks.map((t) => t.project).sort()).toEqual(['A', 'B']);
+    expect(result.skippedProjects).toEqual([]);
+    expect(result.roster).toEqual([{ key: 'u2', name: 'User Two' }]);
+  });
+
+  it('skips the member calls entirely and returns an empty roster when includeRoster is false', async () => {
+    let calls = 0;
+    const deps = makeDeps({
+      getProjectMembers: async () => {
+        calls++;
+        return [{ key: 'u1', name: 'User One' }];
+      },
+    });
+    const result = await new LoadOrchestrator(deps as never).load(win, () => {}, false);
+    expect(calls).toBe(0);
+    expect(result.roster).toEqual([]);
   });
 });

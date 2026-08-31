@@ -3,7 +3,7 @@ import { LoadOrchestrator, LoadResult } from '../services/LoadOrchestrator';
 import { buildMatrix } from '../services/Aggregation';
 import { defaultWindow } from '../services/window';
 import { DateWindow } from '../models/types';
-import { peopleOf, selectTasks } from '../services/people';
+import { peopleOf, selectTasks, selectRoster } from '../services/people';
 import { MatrixTable } from './MatrixTable';
 import { ExportButtons } from './ExportButtons';
 import { PeoplePicker } from './PeoplePicker';
@@ -26,6 +26,7 @@ export function App({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [includeRoster, setIncludeRoster] = useState(true);
 
   async function load(w: DateWindow): Promise<void> {
     if (!w.start || !w.end || w.start > w.end) {
@@ -38,7 +39,7 @@ export function App({
     setResult(null);
     setProgress({ done: 0, total: 0 });
     try {
-      const res = await orchestrator.load(w, (done, total) => setProgress({ done, total }));
+      const res = await orchestrator.load(w, (done, total) => setProgress({ done, total }), includeRoster);
       setResult(res);
     } catch (e) {
       setError(`Failed to load data: ${describeError(e)}`);
@@ -52,13 +53,14 @@ export function App({
   }, []);
 
   const needle = filter.trim().toLowerCase();
-  const people = useMemo(() => (result ? peopleOf(result.tasks) : []), [result]);
+  const people = useMemo(() => (result ? peopleOf(result.tasks, result.roster) : []), [result]);
   const matrix = useMemo(() => {
     if (!result) return null;
+    const roster = includeRoster ? selectRoster(result.roster, selected, filter) : [];
     // Narrowing before aggregation keeps columns and totals scoped to the visible people,
     // which is also what the exports are built from.
-    return buildMatrix(selectTasks(result.tasks, selected, filter));
-  }, [result, selected, filter]);
+    return buildMatrix(selectTasks(result.tasks, selected, filter), roster);
+  }, [result, selected, filter, includeRoster]);
 
   function togglePerson(key: string): void {
     const next = new Set(selected);
@@ -89,6 +91,14 @@ export function App({
         <button onClick={() => setPickerOpen(!pickerOpen)} disabled={people.length === 0}>
           People{selected.size > 0 ? ` (${selected.size})` : ''}
         </button>
+        <label>
+          <input
+            type="checkbox"
+            checked={includeRoster}
+            onChange={(e) => setIncludeRoster(e.target.checked)}
+          />
+          Include people with no tasks
+        </label>
         {result && matrix && <ExportButtons matrix={matrix} window={result.window} />}
         <span className="hint">
           each cell: planned (Original Estimate) / done (Completed Work), in hours

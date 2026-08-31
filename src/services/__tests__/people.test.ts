@@ -1,4 +1,5 @@
-import { peopleOf, selectTasks } from '../people';
+import { peopleOf, selectTasks, selectRoster } from '../people';
+import { Person } from '../people';
 import { TaskItem } from '../../models/types';
 
 function task(over: Partial<TaskItem>): TaskItem {
@@ -33,6 +34,23 @@ describe('peopleOf', () => {
   it('returns nothing for no tasks', () => {
     expect(peopleOf([])).toEqual([]);
   });
+
+  it('merges roster people who have no tasks, sorted alongside the rest', () => {
+    const roster: Person[] = [{ key: 'u3', name: 'Bob' }];
+    expect(peopleOf(tasks, roster)).toEqual([
+      { key: 'u1', name: 'Ann' },
+      { key: 'u3', name: 'Bob' },
+      { key: 'u2', name: 'Zoe' },
+    ]);
+  });
+
+  it('does not duplicate a roster person who also has tasks', () => {
+    const roster: Person[] = [{ key: 'u1', name: 'Ann' }];
+    expect(peopleOf(tasks, roster)).toEqual([
+      { key: 'u1', name: 'Ann' },
+      { key: 'u2', name: 'Zoe' },
+    ]);
+  });
 });
 
 describe('selectTasks', () => {
@@ -52,5 +70,31 @@ describe('selectTasks', () => {
 
   it('keeps everything when nothing is checked and the search is empty', () => {
     expect(selectTasks(tasks, new Set(), '  ')).toHaveLength(3);
+  });
+});
+
+describe('selectRoster', () => {
+  const roster: Person[] = [
+    { key: 'u1', name: 'Ann' },
+    { key: 'u2', name: 'Zoe' },
+    { key: 'u3', name: 'Bob' },
+  ];
+
+  it('keeps only the checked people when a selection exists, ignoring the search text', () => {
+    const kept = selectRoster(roster, new Set(['u2']), 'ann');
+    expect(kept.map((p) => p.name)).toEqual(['Zoe']);
+  });
+
+  it('falls back to the search text when nothing is checked', () => {
+    const kept = selectRoster(roster, new Set(), 'an');
+    expect(kept.map((p) => p.name)).toEqual(['Ann']);
+  });
+
+  it('matches the search text case-insensitively on any part of the name', () => {
+    expect(selectRoster(roster, new Set(), 'ZO')).toHaveLength(1);
+  });
+
+  it('keeps everything when nothing is checked and the search is empty', () => {
+    expect(selectRoster(roster, new Set(), '  ')).toHaveLength(3);
   });
 });

@@ -2,6 +2,8 @@ import { DateWindow, NamedRef, TaskItem } from '../models/types';
 import { ProjectService } from './ProjectService';
 import { IterationService } from './IterationService';
 import { WorkItemService } from './WorkItemService';
+import { TeamService } from './TeamService';
+import { Person } from './people';
 import { parseAssignee } from './assignee';
 import { runBatched } from '../utils/batch';
 
@@ -25,12 +27,14 @@ export interface LoadResult {
   allProjectsFailed: boolean;
   window: DateWindow;
   projectCount: number;
+  roster: Person[];
 }
 
 interface Deps {
   projects: ProjectService;
   iterations: IterationService;
   workItems: WorkItemService;
+  teams: TeamService;
 }
 
 function num(v: unknown): number {
@@ -40,7 +44,11 @@ function num(v: unknown): number {
 export class LoadOrchestrator {
   constructor(private deps: Deps) {}
 
-  async load(win: DateWindow, onProgress: (done: number, total: number) => void): Promise<LoadResult> {
+  async load(
+    win: DateWindow,
+    onProgress: (done: number, total: number) => void,
+    includeRoster = true
+  ): Promise<LoadResult> {
     const projects = await this.deps.projects.getProjects();
     const skippedProjects: SkippedProject[] = [];
     let done = 0;
@@ -58,13 +66,30 @@ export class LoadOrchestrator {
         onProgress(done, projects.length);
       }
     });
+    const roster = includeRoster ? await this.loadRoster(projects) : [];
     return {
       tasks: perProject.flat(),
       skippedProjects,
       allProjectsFailed: projects.length > 0 && skippedProjects.length === projects.length,
       window: win,
       projectCount: projects.length,
+      roster,
     };
+  }
+
+  /** A project's member list is a courtesy, not core data: a fetch failure here must never mark the project skipped. */
+  private async loadRoster(projects: NamedRef[]): Promise<Person[]> {
+    const perProject = await runBatched(projects, async (p: NamedRef) => {
+      try {
+        return await this.deps.teams.getProjectMembers(p.id);
+      } catch (e) {
+        console.warn(`Workload Dashboard: could not load members for project ${p.name}`, e);
+        return [] as Person[];
+      }
+    });
+    const byKey = new Map<string, Person>();
+    for (const members of perProject) for (const m of members) byKey.set(m.key, m);
+    return [...byKey.values()];
   }
 
   private async loadProject(project: string, win: DateWindow): Promise<TaskItem[]> {

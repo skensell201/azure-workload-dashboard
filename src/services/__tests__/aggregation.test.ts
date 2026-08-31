@@ -1,5 +1,6 @@
 import { buildMatrix } from '../Aggregation';
 import { TaskItem } from '../../models/types';
+import { Person } from '../people';
 
 function task(over: Partial<TaskItem>): TaskItem {
   return {
@@ -63,5 +64,49 @@ describe('buildMatrix', () => {
     const filtered = buildMatrix(all.filter((t) => t.assigneeName.toLowerCase().includes('one')));
     expect(filtered.projects).toEqual(['A']);
     expect(filtered.grandTotal).toEqual({ oe: 8, completed: 2 });
+  });
+
+  it('seeds a zero row for a roster person with no tasks', () => {
+    const roster: Person[] = [{ key: 'u3', name: 'Nobody Has Tasks' }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One' })], roster);
+    const row = m.rows.find((r) => r.key === 'u3')!;
+    expect(row).toBeDefined();
+    expect(row.name).toBe('Nobody Has Tasks');
+    expect(row.cells.size).toBe(0);
+    expect(row.total).toEqual({ oe: 0, completed: 0 });
+    expect(row.tasks).toEqual([]);
+  });
+
+  it('does not duplicate a roster person who also has tasks', () => {
+    const roster: Person[] = [{ key: 'u1', name: 'User One' }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', originalEstimate: 8, completedWork: 2 })], roster);
+    expect(m.rows.filter((r) => r.key === 'u1')).toHaveLength(1);
+    expect(m.rows.find((r) => r.key === 'u1')!.total).toEqual({ oe: 8, completed: 2 });
+  });
+
+  it('does not let roster people introduce new project columns', () => {
+    const roster: Person[] = [{ key: 'u3', name: 'Nobody Has Tasks' }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })], roster);
+    expect(m.projects).toEqual(['A']);
+  });
+
+  it('sorts roster-only rows alphabetically alongside people with tasks', () => {
+    const roster: Person[] = [
+      { key: 'u3', name: 'Bob' },
+      { key: 'u4', name: 'Yara' },
+    ];
+    const m = buildMatrix(
+      [
+        task({ assigneeKey: 'u1', assigneeName: 'Ann' }),
+        task({ assigneeKey: 'u2', assigneeName: 'Zoe' }),
+      ],
+      roster
+    );
+    expect(m.rows.map((r) => r.name)).toEqual(['Ann', 'Bob', 'Yara', 'Zoe']);
+  });
+
+  it('behaves identically to today with no roster passed', () => {
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One' })]);
+    expect(m.rows).toHaveLength(1);
   });
 });

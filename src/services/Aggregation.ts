@@ -1,4 +1,5 @@
 import { TaskItem } from '../models/types';
+import { Person } from './people';
 
 export interface MatrixCell {
   oe: number;
@@ -25,7 +26,7 @@ function add(cell: MatrixCell, t: TaskItem): void {
   cell.completed += t.completedWork;
 }
 
-export function buildMatrix(tasks: TaskItem[]): Matrix {
+export function buildMatrix(tasks: TaskItem[], roster: Person[] = []): Matrix {
   const rowsByKey = new Map<string, MatrixRow>();
   const projectTotals = new Map<string, MatrixCell>();
   const grandTotal: MatrixCell = { oe: 0, completed: 0 };
@@ -51,6 +52,12 @@ export function buildMatrix(tasks: TaskItem[]): Matrix {
     add(pt, t);
     add(grandTotal, t);
     row.tasks.push(t);
+  }
+
+  // Roster rows must not touch projectTotals/grandTotal or projects: they carry no tasks.
+  for (const p of roster) {
+    if (rowsByKey.has(p.key)) continue;
+    rowsByKey.set(p.key, { key: p.key, name: p.name, cells: new Map(), total: { oe: 0, completed: 0 }, tasks: [] });
   }
 
   const rows = [...rowsByKey.values()].sort((a, b) => a.name.localeCompare(b.name));

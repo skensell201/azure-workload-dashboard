@@ -25,6 +25,18 @@ search text, so you can keep searching for the next person to add without losing
 the ones already ticked. `Clear selection` goes back to showing everyone the
 search matches.
 
+## People with no tasks
+
+Today's matrix is built from Task work items, so a specialist with nothing
+assigned in the window would otherwise be invisible to management. With
+**Include people with no tasks** checked (the default), the table also seeds a
+zero row — `0 / 0`, no project columns — for every person who belongs to a
+project team but has no Task in the window. The roster comes from each
+project's team membership (`_apis/projects/{id}/teams` and its members), the
+only roster on-prem exposes without Graph API scopes. Unchecking the box
+hides those rows immediately and, from the next Refresh onward, skips the
+extra per-project team calls entirely, which makes the load faster.
+
 ## Export
 
 **CSV** writes the matrix exactly as displayed, including the name filter, with a

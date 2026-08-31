@@ -27,6 +27,7 @@ function stubOrchestrator(result: Partial<LoadResult>): LoadOrchestrator {
     allProjectsFailed: false,
     projectCount: 1,
     window: win,
+    roster: [],
     ...result,
   });
   return { load } as unknown as LoadOrchestrator;
@@ -111,5 +112,39 @@ describe('App', () => {
   it('reports an empty window when the load genuinely returned no tasks', async () => {
     const { getByText } = renderApp({ tasks: [], projectCount: 2 });
     await waitFor(() => expect(getByText(/No assigned tasks/)).toBeTruthy());
+  });
+
+  it('shows a roster-only person as a zero row in the Total column', async () => {
+    const { getByText, getAllByText } = renderApp({
+      tasks: twoPeople,
+      projectCount: 2,
+      roster: [{ key: 'u9', name: 'Nobody Has Tasks' }],
+    });
+    await waitFor(() => expect(getByText('Nobody Has Tasks')).toBeTruthy());
+    expect(getAllByText('0 / 0').length).toBeGreaterThan(0);
+  });
+
+  it('hides roster-only rows immediately when the checkbox is unchecked, without reloading', async () => {
+    let loadCalls = 0;
+    const load = async (win: DateWindow): Promise<LoadResult> => {
+      loadCalls++;
+      return {
+        tasks: twoPeople,
+        skippedProjects: [],
+        allProjectsFailed: false,
+        projectCount: 2,
+        window: win,
+        roster: [{ key: 'u9', name: 'Nobody Has Tasks' }],
+      };
+    };
+    const orchestrator = { load } as unknown as LoadOrchestrator;
+    const { getByText, queryByText, getByLabelText } = render(<App orchestrator={orchestrator} baseUrl="http://s" />);
+    await waitFor(() => expect(getByText('Nobody Has Tasks')).toBeTruthy());
+    expect(loadCalls).toBe(1);
+
+    fireEvent.click(getByLabelText('Include people with no tasks'));
+
+    expect(queryByText('Nobody Has Tasks')).toBeNull();
+    expect(loadCalls).toBe(1);
   });
 });

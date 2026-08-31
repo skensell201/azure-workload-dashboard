@@ -7,6 +7,7 @@ import { RestApiClient } from './services/ApiClient';
 import { ProjectService } from './services/ProjectService';
 import { IterationService } from './services/IterationService';
 import { WorkItemService } from './services/WorkItemService';
+import { TeamService } from './services/TeamService';
 import { LoadOrchestrator } from './services/LoadOrchestrator';
 import { colorSchemeOf } from './services/theme';
 import { App, describeError } from './components/App';
@@ -28,6 +29,7 @@ async function start(): Promise<void> {
     projects: new ProjectService(api),
     iterations: new IterationService(api),
     workItems: new WorkItemService(api),
+    teams: new TeamService(api),
   });
   ReactDOM.render(<App orchestrator={orchestrator} baseUrl={baseUrl} />, document.getElementById('root'));
 }
