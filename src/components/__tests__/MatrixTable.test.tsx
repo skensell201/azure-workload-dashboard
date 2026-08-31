@@ -19,7 +19,7 @@ const matrix = buildMatrix([
 
 describe('MatrixTable', () => {
   it('renders one row per person with per-project cells and totals', () => {
-    const { getByText, getAllByText } = render(<MatrixTable matrix={matrix} filter="" baseUrl="http://s" />);
+    const { getByText, getAllByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
     expect(getByText('User One')).toBeTruthy();
     expect(getByText('User Two')).toBeTruthy();
     expect(getAllByText('24 / 6').length).toBeGreaterThan(0);
@@ -27,20 +27,14 @@ describe('MatrixTable', () => {
   });
 
   it('expands a row into the task list on click', () => {
-    const { getByText, queryByText } = render(<MatrixTable matrix={matrix} filter="" baseUrl="http://s" />);
+    const { getByText, queryByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
     expect(queryByText('Fix bug')).toBeNull();
     fireEvent.click(getByText('User One'));
     expect(getByText('Fix bug')).toBeTruthy();
   });
 
-  it('filters rows by name substring, case-insensitive', () => {
-    const { queryByText } = render(<MatrixTable matrix={matrix} filter="two" baseUrl="http://s" />);
-    expect(queryByText('User One')).toBeNull();
-    expect(queryByText('User Two')).toBeTruthy();
-  });
-
   it('shows a dash for a project the person has no tasks in', () => {
-    const { getAllByText } = render(<MatrixTable matrix={matrix} filter="" baseUrl="http://s" />);
+    const { getAllByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
     expect(getAllByText('—').length).toBe(1);
   });
 });

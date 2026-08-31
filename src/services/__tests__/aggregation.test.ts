@@ -54,4 +54,14 @@ describe('buildMatrix', () => {
     expect(m.projects).toEqual([]);
     expect(m.grandTotal).toEqual({ oe: 0, completed: 0 });
   });
+
+  it('totals reflect only the tasks passed in, so a filtered set totals the filtered person', () => {
+    const all = [
+      task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A', originalEstimate: 8, completedWork: 2 }),
+      task({ id: 2, assigneeKey: 'u2', assigneeName: 'User Two', project: 'B', originalEstimate: 40, completedWork: 20 }),
+    ];
+    const filtered = buildMatrix(all.filter((t) => t.assigneeName.toLowerCase().includes('one')));
+    expect(filtered.projects).toEqual(['A']);
+    expect(filtered.grandTotal).toEqual({ oe: 8, completed: 2 });
+  });
 });

@@ -1,7 +1,7 @@
 import './hub.css';
 import * as SDK from 'azure-devops-extension-sdk';
 import { CommonServiceIds, ILocationService } from 'azure-devops-extension-api';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { RestApiClient } from './services/ApiClient';
 import { ProjectService } from './services/ProjectService';
@@ -43,7 +43,12 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const matrix = result ? buildMatrix(result.tasks) : null;
+  const matrix = useMemo(() => {
+    if (!result) return null;
+    const needle = filter.trim().toLowerCase();
+    const tasks = needle ? result.tasks.filter((t) => t.assigneeName.toLowerCase().includes(needle)) : result.tasks;
+    return buildMatrix(tasks);
+  }, [result, filter]);
   return (
     <div className="app">
       <div className="toolbar">
@@ -79,7 +84,7 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
       {matrix && matrix.rows.length === 0 && !progress && !result?.allProjectsFailed && (
         <div className="empty">Нет задач с исполнителями в выбранном окне дат.</div>
       )}
-      {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} filter={filter} baseUrl={baseUrl} />}
+      {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} baseUrl={baseUrl} />}
     </div>
   );
 }

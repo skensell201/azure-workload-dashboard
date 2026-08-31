@@ -32,10 +32,8 @@ function TaskRows({ row, colSpan, baseUrl }: { row: MatrixRow; colSpan: number; 
   );
 }
 
-export function MatrixTable({ matrix, filter, baseUrl }: { matrix: Matrix; filter: string; baseUrl: string }): JSX.Element {
+export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: string }): JSX.Element {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const needle = filter.trim().toLowerCase();
-  const rows = needle ? matrix.rows.filter((r) => r.name.toLowerCase().includes(needle)) : matrix.rows;
   const colSpan = matrix.projects.length + 2;
 
   function toggle(key: string): void {
@@ -55,7 +53,7 @@ export function MatrixTable({ matrix, filter, baseUrl }: { matrix: Matrix; filte
         </tr>
       </thead>
       <tbody>
-        {rows.map((r) => (
+        {matrix.rows.map((r) => (
           <React.Fragment key={r.key}>
             <tr className="person-row" onClick={() => toggle(r.key)}>
               <td>{r.name}</td>
