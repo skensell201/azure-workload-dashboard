@@ -23,4 +23,8 @@ describe('parseAssignee', () => {
     expect(parseAssignee(undefined)).toBeNull();
     expect(parseAssignee('')).toBeNull();
   });
+
+  it('takes the last angle-bracket group as the account', () => {
+    expect(parseAssignee('A <x> <y>')).toEqual({ key: 'y', name: 'A <x>' });
+  });
 });

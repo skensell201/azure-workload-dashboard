@@ -13,7 +13,7 @@ export function parseAssignee(value: unknown): Assignee | null {
     return { key: v.uniqueName ?? name, name };
   }
   if (typeof value === 'string') {
-    const m = value.match(/^(.*?)\s*<(.+)>$/);
+    const m = value.match(/^(.*?)\s*<([^<>]+)>$/);
     if (m) return { key: m[2], name: m[1] };
     return { key: value, name: value };
   }

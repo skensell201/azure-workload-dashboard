@@ -7,17 +7,21 @@ describe('buildTaskWiql', () => {
         "WHERE [System.WorkItemType] = 'Task' " +
         "AND [System.AssignedTo] <> '' " +
         "AND [System.State] <> 'Removed' " +
-        "AND ([System.IterationPath] UNDER 'P\\Sprint 1')"
+        "AND ([System.IterationPath] = 'P\\Sprint 1')"
     );
   });
 
   it('joins several iteration paths with OR', () => {
     expect(buildTaskWiql(['P\\S1', 'P\\S2'])).toContain(
-      "([System.IterationPath] UNDER 'P\\S1' OR [System.IterationPath] UNDER 'P\\S2')"
+      "([System.IterationPath] = 'P\\S1' OR [System.IterationPath] = 'P\\S2')"
     );
   });
 
   it('escapes single quotes inside iteration paths', () => {
-    expect(buildTaskWiql(["P\\O'Brien sprint"])).toContain("UNDER 'P\\O''Brien sprint'");
+    expect(buildTaskWiql(["P\\O'Brien sprint"])).toContain("= 'P\\O''Brien sprint'");
+  });
+
+  it('throws on an empty path list', () => {
+    expect(() => buildTaskWiql([])).toThrow('at least one iteration path');
   });
 });

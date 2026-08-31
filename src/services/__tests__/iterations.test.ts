@@ -42,4 +42,9 @@ describe('collectIterationPaths', () => {
     const root = node('P', '2026-09-01T00:00:00Z', '2026-09-14T00:00:00Z');
     expect(collectIterationPaths(root, win)).toEqual(['P']);
   });
+
+  it('includes an iteration fully containing the window', () => {
+    const root = node('P', undefined, undefined, [node('S', '2026-08-01T00:00:00Z', '2026-10-01T00:00:00Z')]);
+    expect(collectIterationPaths(root, win)).toEqual(['P\\S']);
+  });
 });

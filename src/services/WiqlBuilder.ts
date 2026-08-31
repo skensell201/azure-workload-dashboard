@@ -1,12 +1,14 @@
 export function buildTaskWiql(iterationPaths: string[]): string {
-  const under = iterationPaths
-    .map((p) => `[System.IterationPath] UNDER '${p.replace(/'/g, "''")}'`)
+  if (iterationPaths.length === 0) throw new Error('buildTaskWiql requires at least one iteration path');
+  // In WIQL string literals the only escape is quote doubling; backslash is a literal character.
+  const clauses = iterationPaths
+    .map((p) => `[System.IterationPath] = '${p.replace(/'/g, "''")}'`)
     .join(' OR ');
   return (
     'SELECT [System.Id] FROM workitems ' +
     "WHERE [System.WorkItemType] = 'Task' " +
     "AND [System.AssignedTo] <> '' " +
     "AND [System.State] <> 'Removed' " +
-    `AND (${under})`
+    `AND (${clauses})`
   );
 }
