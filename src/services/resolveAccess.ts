@@ -3,8 +3,13 @@ import { AccessDecision, AccessList, decideAccess } from './access';
 /** The subset of AccessService that resolveAccess needs, kept narrow so it is easy to fake in tests. */
 export interface AccessServiceLike {
   readList(): Promise<AccessList | null>;
-  isCollectionAdmin(userId: string): Promise<boolean>;
-  getUserGroupDescriptors(userId: string): Promise<string[]>;
+  /**
+   * Single identity round trip backing both the admin check and the group-membership
+   * check (see I3) -- fetching it twice risked the two answers disagreeing. `verified`
+   * distinguishes "identity not returned" from "identity returned with no groups" (see
+   * I2); resolveAccess maps verified: false onto membershipUnverified.
+   */
+  getUserMembership(userId: string): Promise<{ descriptors: string[]; isAdmin: boolean; verified: boolean }>;
 }
 
 export interface ResolvedAccess {
@@ -18,14 +23,17 @@ export interface ResolvedAccess {
  * Pure assembly of the access decision for one user: reads the stored allow-list plus
  * this user's admin/group membership, then hands them to decideAccess (see I5).
  *
- * The membership lookup rides on the /_apis/identities endpoint, which can itself be
- * denied by server permissions on-prem (see I1) -- both the admin check and the group
- * membership lookup are wrapped in a single try/catch so that EITHER one throwing
- * degrades both to "unverified": isAdmin = false, userGroupDescriptors = [],
- * membershipUnverified = true. This function itself must never throw: a broken
- * identities endpoint must not take the whole hub down, and must not prevent the
- * empty-list bootstrap case from still letting everyone in (decideAccess checks the
- * empty list before it ever looks at membershipUnverified).
+ * The membership lookup rides on a single /_apis/identities round trip via
+ * getUserMembership (see I3 -- the admin check and the group lookup are derived from the
+ * same payload, so they can never disagree), which can itself be denied by server
+ * permissions on-prem (see I1) or resolve to no identity at all (see I2). Both cases
+ * degrade to "unverified": isAdmin = false, userGroupDescriptors = [], membershipUnverified
+ * = true -- a throw is caught directly, and a resolved-but-unverified result
+ * (`verified: false`) is mapped the same way rather than treated as "verified: no
+ * groups". This function itself must never throw: a broken identities endpoint must not
+ * take the whole hub down, and must not prevent the empty-list bootstrap case from still
+ * letting everyone in (decideAccess checks the empty list before it ever looks at
+ * membershipUnverified).
  */
 export async function resolveAccess(input: {
   user: { id: string };
@@ -38,12 +46,10 @@ export async function resolveAccess(input: {
   let userGroupDescriptors: string[] = [];
   let membershipUnverified = false;
   try {
-    const [admin, descriptors] = await Promise.all([
-      accessService.isCollectionAdmin(user.id),
-      accessService.getUserGroupDescriptors(user.id),
-    ]);
-    isAdmin = admin;
-    userGroupDescriptors = descriptors;
+    const membership = await accessService.getUserMembership(user.id);
+    isAdmin = membership.isAdmin;
+    userGroupDescriptors = membership.descriptors;
+    membershipUnverified = !membership.verified;
   } catch {
     isAdmin = false;
     userGroupDescriptors = [];

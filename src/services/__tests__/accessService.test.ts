@@ -62,8 +62,8 @@ describe('AccessService.searchIdentities', () => {
   });
 });
 
-describe('AccessService.getUserGroupDescriptors', () => {
-  it('returns the memberOf descriptors verbatim from a single identities call (no per-group round trip)', async () => {
+describe('AccessService.getUserMembership', () => {
+  it('returns the memberOf descriptors verbatim, isAdmin, and verified from a single identities call', async () => {
     const paths: string[] = [];
     const api = fakeApi({
       get: (path) => {
@@ -71,12 +71,12 @@ describe('AccessService.getUserGroupDescriptors', () => {
         return { value: [{ id: 'user-1', memberOf: ['desc-a', 'desc-b'] }] };
       },
     });
-    const descriptors = await new AccessService(api, fakeStore()).getUserGroupDescriptors('user-1');
-    expect(descriptors).toEqual(['desc-a', 'desc-b']);
+    const membership = await new AccessService(api, fakeStore()).getUserMembership('user-1');
+    expect(membership).toEqual({ descriptors: ['desc-a', 'desc-b'], isAdmin: false, verified: true });
     expect(paths).toEqual(['/_apis/identities?identityIds=user-1&queryMembership=Expanded&api-version=6.0']);
   });
 
-  it('returns an empty array when the identity has no memberships, without extra calls', async () => {
+  it('returns an empty descriptor list, verified true, when the identity has no memberships (not the same as unresolvable)', async () => {
     const paths: string[] = [];
     const api = fakeApi({
       get: (path) => {
@@ -84,14 +84,12 @@ describe('AccessService.getUserGroupDescriptors', () => {
         return { value: [{ id: 'user-1' }] };
       },
     });
-    const descriptors = await new AccessService(api, fakeStore()).getUserGroupDescriptors('user-1');
-    expect(descriptors).toEqual([]);
+    const membership = await new AccessService(api, fakeStore()).getUserMembership('user-1');
+    expect(membership).toEqual({ descriptors: [], isAdmin: false, verified: true });
     expect(paths).toHaveLength(1);
   });
-});
 
-describe('AccessService.isCollectionAdmin', () => {
-  it('is true when a memberOf descriptor carries the well-known admin SID suffix, from a single call', async () => {
+  it('is admin, from a single call, when a memberOf descriptor is the well-known admin SID', async () => {
     const paths: string[] = [];
     const api = fakeApi({
       get: (path) => {
@@ -99,18 +97,20 @@ describe('AccessService.isCollectionAdmin', () => {
         return { value: [{ id: 'user-1', memberOf: ['vssgp.SomeOtherGroup', 'Microsoft.TeamFoundation.Identity;S-1-9-1551374245-1-0-0-0-0-0-0-0-0-1'] }] };
       },
     });
-    expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(true);
+    const membership = await new AccessService(api, fakeStore()).getUserMembership('user-1');
+    expect(membership.isAdmin).toBe(true);
     expect(paths).toHaveLength(1);
   });
 
-  it('is false when no memberOf descriptor carries the admin suffix', async () => {
+  it('is not admin when no memberOf descriptor is the admin SID', async () => {
     const api = fakeApi({ get: () => ({ value: [{ id: 'user-1', memberOf: ['vssgp.SomeOtherGroup'] }] }) });
-    expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(false);
+    expect((await new AccessService(api, fakeStore()).getUserMembership('user-1')).isAdmin).toBe(false);
   });
 
-  it('is false when the identity has no memberships', async () => {
-    const api = fakeApi({ get: () => ({ value: [{ id: 'user-1' }] }) });
-    expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(false);
+  it('reports verified: false, with no descriptors and not admin, when the identities call returns no identity at all (200 with an empty value array)', async () => {
+    const api = fakeApi({ get: () => ({ value: [] }) });
+    const membership = await new AccessService(api, fakeStore()).getUserMembership('user-1');
+    expect(membership).toEqual({ descriptors: [], isAdmin: false, verified: false });
   });
 });
 

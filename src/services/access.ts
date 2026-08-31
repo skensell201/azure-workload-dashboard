@@ -25,29 +25,27 @@ function normalize(s: string): string {
 }
 
 /**
- * Suffix of the well-known Project Collection Administrators group's SID-based descriptor
- * on Azure DevOps Server (".../S-1-9-...-0-0-0-0-1"). It is assigned by the server when
- * the collection is created and cannot be produced by creating an ordinary group, unlike
- * the group's display name -- see isCollectionAdminDescriptor for why that matters.
+ * Full well-known form of the Project Collection Administrators group's SID-based
+ * descriptor on Azure DevOps Server. It is assigned by the server when the collection is
+ * created and cannot be produced by creating an ordinary group, unlike the group's
+ * display name -- see isCollectionAdminDescriptor for why that matters. Anchored to the
+ * whole descriptor (not just the trailing "-0-0-0-0-1") so a fabricated descriptor that
+ * merely happens to end the same way does not match.
  */
-const WELL_KNOWN_ADMIN_SID_SUFFIX = /-0-0-0-0-1$/;
-const ADMIN_DISPLAY_NAME_SUFFIX = /project collection administrators$/i;
+const WELL_KNOWN_ADMIN_SID = /^Microsoft\.TeamFoundation\.Identity;S-1-9-\d+(-\d+)*-0-0-0-0-1$/i;
 
 /**
- * Pure predicate: is this identity the well-known Project Collection Administrators
- * group? Prefers the server-assigned SID suffix on the descriptor -- it cannot be
- * spoofed by creating a same-named group, because that group gets an ordinary
- * project-scoped descriptor instead. The display-name check is kept only as a fallback
- * for when no descriptor is available at all (e.g. a data source that only carries
- * names). It is deliberately NOT consulted when a descriptor is present but simply
- * doesn't match the suffix: that is exactly what an attacker-created group named
- * "Project Collection Administrators" would look like, and falling back to the name in
- * that case would hand it admin rights. A bare display name is user-settable and must
- * never grant admin on its own.
+ * Pure predicate: is this descriptor the well-known Project Collection Administrators
+ * group? Matched only by the server-assigned SID form -- it cannot be spoofed by
+ * creating a same-named group, because that group gets an ordinary project-scoped
+ * descriptor instead. There is deliberately no display-name fallback: a bare display
+ * name is user-settable, and a future caller passing an object carrying a name would
+ * otherwise silently reintroduce the spoof this predicate exists to prevent. The only
+ * production call site already has a descriptor whenever the identity is real, so
+ * narrowing to just the descriptor string costs nothing.
  */
-export function isCollectionAdminDescriptor(identity: { descriptor?: string; displayName?: string }): boolean {
-  if (identity.descriptor) return WELL_KNOWN_ADMIN_SID_SUFFIX.test(identity.descriptor);
-  return typeof identity.displayName === 'string' && ADMIN_DISPLAY_NAME_SUFFIX.test(identity.displayName.trim());
+export function isCollectionAdminDescriptor(descriptor: string): boolean {
+  return WELL_KNOWN_ADMIN_SID.test(descriptor);
 }
 
 /**
@@ -78,7 +76,11 @@ export function decideAccess(input: {
   if (list.entries.length === 0) return { allowed: true, reason: 'unrestricted' };
 
   const normalizedUserId = normalize(userId);
-  if (list.entries.some((e) => normalize(e.id) === normalizedUserId)) return { allowed: true, reason: 'user' };
+  // Guard the empty-id edge: without this, a stored entry with an empty (or
+  // whitespace-only) id would match an equally empty/blank userId and grant access.
+  if (normalizedUserId && list.entries.some((e) => normalize(e.id) === normalizedUserId)) {
+    return { allowed: true, reason: 'user' };
+  }
 
   // `kind` is UI metadata only (see AccessEntry) and must not gate this check: membership
   // is proven by a matching descriptor, not by trusting a stored label.

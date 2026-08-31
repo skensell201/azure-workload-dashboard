@@ -100,6 +100,15 @@ describe('decideAccess', () => {
     expect(decision).toEqual({ allowed: false, reason: 'not-listed' });
   });
 
+  it('does not let a stored entry with an empty id match an empty/blank user id', () => {
+    const decision = decideAccess({
+      ...baseInput,
+      list: { entries: [{ id: '', name: 'legacy blank entry', kind: 'user' }] },
+      userId: '   ',
+    });
+    expect(decision).toEqual({ allowed: false, reason: 'not-listed' });
+  });
+
   it('denies with a distinct reason when membership could not be verified and the user is not listed by id', () => {
     const decision = decideAccess({
       ...baseInput,
@@ -111,23 +120,19 @@ describe('decideAccess', () => {
 });
 
 describe('isCollectionAdminDescriptor', () => {
-  it('matches the well-known SID suffix on the descriptor', () => {
-    expect(
-      isCollectionAdminDescriptor({ descriptor: 'Microsoft.TeamFoundation.Identity;S-1-9-1551374245-1-0-0-0-0-0-0-0-0-1' })
-    ).toBe(true);
+  it('matches a genuine well-known collection-admin SID descriptor', () => {
+    expect(isCollectionAdminDescriptor('Microsoft.TeamFoundation.Identity;S-1-9-1551374245-1-0-0-0-0-0-0-0-0-1')).toBe(true);
   });
 
-  it('does not match an arbitrary project group named "Project Collection Administrators" with a normal SID', () => {
-    expect(
-      isCollectionAdminDescriptor({
-        descriptor: 'vssgp.Uy0xLTktMTU1MTM3NDI0NS0xLTIxMzEyMzEyMy0y',
-        displayName: 'Project Collection Administrators',
-      })
-    ).toBe(false);
+  it('does not match an ordinary project group descriptor, even one for a group named "Project Collection Administrators"', () => {
+    expect(isCollectionAdminDescriptor('vssgp.Uy0xLTktMTU1MTM3NDI0NS0xLTIxMzEyMzEyMy0y')).toBe(false);
   });
 
-  it('applies the display-name fallback only when no descriptor is present at all', () => {
-    expect(isCollectionAdminDescriptor({ displayName: 'Project Collection Administrators' })).toBe(true);
-    expect(isCollectionAdminDescriptor({ displayName: 'Some Other Group' })).toBe(false);
+  it('does not match a descriptor that merely ends in the suffix without the full well-known SID form', () => {
+    expect(isCollectionAdminDescriptor('Microsoft.TeamFoundation.Identity;S-1-9-somebody-tacked-this-on-0-0-0-0-1')).toBe(false);
+  });
+
+  it('does not match a non-admin Microsoft.TeamFoundation.Identity descriptor with a different trailing well-known RID', () => {
+    expect(isCollectionAdminDescriptor('Microsoft.TeamFoundation.Identity;S-1-9-1551374245-2-0-0-0-0-2')).toBe(false);
   });
 });

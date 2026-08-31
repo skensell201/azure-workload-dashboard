@@ -86,26 +86,23 @@ export class AccessService {
   }
 
   /**
-   * Descriptors of every group the identity belongs to, taken verbatim from `memberOf` on
-   * a single identities call (see I2/I3) -- no per-group round trip to resolve each
-   * descriptor to an id, and no attempt to resolve them at all: decideAccess matches
-   * stored entries by descriptor directly.
+   * Group membership and admin status for one user, from a single identities call (see
+   * I2/I3) -- no per-group round trip to resolve each descriptor to an id, and no attempt
+   * to resolve them at all: decideAccess matches stored entries by descriptor directly.
+   *
+   * `verified` distinguishes "the identity itself could not be resolved" (a 200 with an
+   * empty `value` -- wrong id space, unresolvable identity, a permission mode that filters
+   * instead of rejecting) from "the identity resolved and simply belongs to no groups".
+   * The two are NOT the same: collapsing them let a real collection administrator whose
+   * identity failed to resolve fall through to the generic denial with no explanation
+   * (see I2). Callers must treat verified: false as membership-unverified, not as
+   * "verified: no groups, not admin".
    */
-  async getUserGroupDescriptors(userId: string): Promise<string[]> {
+  async getUserMembership(userId: string): Promise<{ descriptors: string[]; isAdmin: boolean; verified: boolean }> {
     const self = await this.fetchIdentity(userId);
-    return self?.memberOf ?? [];
-  }
-
-  /**
-   * True when the user is a member of the well-known Project Collection Administrators
-   * group, identified by the SID suffix on one of their memberOf descriptors (see
-   * isCollectionAdminDescriptor for why the suffix, not a name search, is the reliable
-   * signal). A single identities call, same shape as getUserGroupDescriptors.
-   */
-  async isCollectionAdmin(userId: string): Promise<boolean> {
-    const self = await this.fetchIdentity(userId);
-    const descriptors = self?.memberOf ?? [];
-    return descriptors.some((d) => isCollectionAdminDescriptor({ descriptor: d }));
+    if (self === null) return { descriptors: [], isAdmin: false, verified: false };
+    const descriptors = self.memberOf ?? [];
+    return { descriptors, isAdmin: descriptors.some(isCollectionAdminDescriptor), verified: true };
   }
 
   /** null = could not be read (storage unavailable, or unreadable/malformed); see parseStoredList and isDocumentNotFound. */
