@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b88d8"/>
+      <stop offset="1" stop-color="#005a9e"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+
+  <!-- Capacity line: the workload a person can actually absorb in the window. -->
+  <rect x="18" y="45" width="92" height="5" rx="2.5" fill="#ffffff" opacity="0.7"/>
+
+  <!-- Three people's load; the last one overshoots capacity and is flagged amber. -->
+  <rect x="26" y="66" width="20" height="40" rx="4" fill="#ffffff"/>
+  <rect x="54" y="54" width="20" height="52" rx="4" fill="#ffffff"/>
+  <rect x="82" y="54" width="20" height="52" rx="4" fill="#ffffff"/>
+  <rect x="82" y="26" width="20" height="26" rx="4" fill="#ffb900"/>
+</svg>

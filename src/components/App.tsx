@@ -4,6 +4,7 @@ import { buildMatrix } from '../services/Aggregation';
 import { defaultWindow } from '../services/window';
 import { DateWindow } from '../models/types';
 import { MatrixTable } from './MatrixTable';
+import { ExportButtons } from './ExportButtons';
 
 export function describeError(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -73,6 +74,7 @@ export function App({
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
+        {result && matrix && <ExportButtons matrix={matrix} window={result.window} />}
         <span className="hint">cell: Original Estimate / Completed, hours</span>
       </div>
       {progress && <div className="progress">Loaded {progress.done} of {progress.total} projects</div>}

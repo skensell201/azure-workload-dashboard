@@ -1,3 +1,5 @@
+<img src="images/icon.png" width="96" align="right" alt="">
+
 # Workload Dashboard
 
 An Azure DevOps Server (on-prem) extension that shows specialist workload across
@@ -10,6 +12,18 @@ items' `Microsoft.VSTS.Scheduling.OriginalEstimate` and
 `Microsoft.VSTS.Scheduling.CompletedWork` fields — the extension does not compute
 or estimate hours itself. Each viewer only sees the projects they already have
 access to.
+
+## Export
+
+**CSV** writes the matrix exactly as displayed, including the name filter, with a
+UTF-8 BOM so Excel opens Cyrillic names correctly. **Excel** writes a workbook with
+two sheets: `Workload` (the same matrix) and `Tasks` (every task behind it — id,
+title, person, project, iteration, state, hours), so the numbers can be pivoted.
+
+In both formats each project becomes two numeric columns, `— Original Estimate`
+and `— Completed`, rather than one `48 / 32` string, so the values can be summed.
+A project a person has no tasks in is left blank rather than zero. Files are named
+after the loaded window, e.g. `workload-2026-08-31_2026-09-13.xlsx`.
 
 ## Install
 

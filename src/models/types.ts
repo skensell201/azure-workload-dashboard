@@ -16,6 +16,14 @@ export interface IterationNode {
   children?: IterationNode[];
 }
 
+export type CellValue = string | number | null;
+
+/** A rectangular sheet ready for CSV or Excel; null renders as an empty cell. */
+export interface Table {
+  headers: string[];
+  rows: CellValue[][];
+}
+
 export interface TaskItem {
   id: number;
   title: string;
