@@ -23,6 +23,8 @@ export interface LoadResult {
   tasks: TaskItem[];
   skippedProjects: SkippedProject[];
   allProjectsFailed: boolean;
+  window: DateWindow;
+  projectCount: number;
 }
 
 interface Deps {
@@ -48,7 +50,6 @@ export class LoadOrchestrator {
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
         // Keep the reason: on-prem 403/404s must be distinguishable from bugs in the mapper.
-        // eslint-disable-next-line no-console
         console.warn(`Workload Dashboard: skipping project ${p.name}`, e);
         skippedProjects.push({ name: p.name, reason });
         return [] as TaskItem[];
@@ -61,6 +62,8 @@ export class LoadOrchestrator {
       tasks: perProject.flat(),
       skippedProjects,
       allProjectsFailed: projects.length > 0 && skippedProjects.length === projects.length,
+      window: win,
+      projectCount: projects.length,
     };
   }
 

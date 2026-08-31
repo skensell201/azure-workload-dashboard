@@ -4,6 +4,8 @@ body { font-family: "Segoe UI", sans-serif; font-size: 14px; margin: 0; color: #
 .toolbar input[type="text"] { padding: 4px 8px; min-width: 220px; }
 .hint { color: #605e5c; }
 .progress { color: #605e5c; margin: 8px 0; }
+.loaded-window { color: #605e5c; margin: 8px 0; }
+.loaded-window.stale { color: #a4262c; }
 .warning { background: #fff4ce; border: 1px solid #ffb900; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
 .error-box { background: #fde7e9; border: 1px solid #d13438; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
 .empty { color: #605e5c; padding: 24px 0; }

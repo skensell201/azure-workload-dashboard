@@ -25,6 +25,12 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
   const [error, setError] = useState<string | null>(null);
 
   async function load(w: DateWindow): Promise<void> {
+    if (!w.start || !w.end || w.start > w.end) {
+      setError('Укажите корректный период: дата начала не позже даты окончания.');
+      setResult(null);
+      setProgress(null);
+      return;
+    }
     setError(null);
     setResult(null);
     setProgress({ done: 0, total: 0 });
@@ -40,7 +46,6 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
 
   useEffect(() => {
     void load(win);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const matrix = useMemo(() => {
@@ -72,7 +77,7 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
       {result && result.allProjectsFailed && (
         <div className="error-box">
           Не удалось загрузить ни один проект — вероятно, истёк токен или сервер недоступен. Причина:{' '}
-          {result.skippedProjects[0]?.reason}
+          {[...new Set(result.skippedProjects.map((s) => s.reason))].join('; ')}
         </div>
       )}
       {result && !result.allProjectsFailed && result.skippedProjects.length > 0 && (
@@ -81,7 +86,19 @@ function App({ orchestrator, baseUrl }: { orchestrator: LoadOrchestrator; baseUr
           {result.skippedProjects.map((s) => `${s.name} (${s.reason})`).join(', ')}
         </div>
       )}
-      {matrix && matrix.rows.length === 0 && !progress && !result?.allProjectsFailed && (
+      {result && result.projectCount === 0 && (
+        <div className="warning">Не видно ни одного проекта — проверьте права доступа в коллекции.</div>
+      )}
+      {result && matrix && (() => {
+        const stale = result.window.start !== win.start || result.window.end !== win.end;
+        return (
+          <div className={`loaded-window${stale ? ' stale' : ''}`}>
+            Данные за период: {result.window.start} — {result.window.end}
+            {stale ? ' (окно изменено — нажмите «Обновить»)' : ''}
+          </div>
+        );
+      })()}
+      {result && matrix && matrix.rows.length === 0 && !progress && !result.allProjectsFailed && result.projectCount > 0 && (
         <div className="empty">Нет задач с исполнителями в выбранном окне дат.</div>
       )}
       {matrix && matrix.rows.length > 0 && <MatrixTable matrix={matrix} baseUrl={baseUrl} />}
@@ -104,7 +121,6 @@ async function start(): Promise<void> {
 }
 
 start().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error('Workload Dashboard init failed:', e);
   const root = document.getElementById('root');
   if (root) root.textContent = `Failed to initialize Workload Dashboard: ${describeError(e)}`;

@@ -48,6 +48,8 @@ describe('LoadOrchestrator', () => {
     });
     expect(result.skippedProjects).toEqual([]);
     expect(result.allProjectsFailed).toBe(false);
+    expect(result.window).toEqual(win);
+    expect(result.projectCount).toBe(2);
   });
 
   it('skips a failing project and keeps the rest', async () => {
@@ -70,7 +72,7 @@ describe('LoadOrchestrator', () => {
     });
     const result = await new LoadOrchestrator(deps as never).load(win, () => {});
     expect(result.tasks).toEqual([]);
-    expect(result.skippedProjects).toEqual([
+    expect([...result.skippedProjects].sort((a, b) => a.name.localeCompare(b.name))).toEqual([
       { name: 'A', reason: 'token expired' },
       { name: 'B', reason: 'token expired' },
     ]);
