@@ -1,0 +1,19 @@
+body { font-family: "Segoe UI", sans-serif; font-size: 14px; margin: 0; color: #201f1e; }
+.app { padding: 16px; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar input[type="text"] { padding: 4px 8px; min-width: 220px; }
+.hint { color: #605e5c; }
+.progress { color: #605e5c; margin: 8px 0; }
+.warning { background: #fff4ce; border: 1px solid #ffb900; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
+.error-box { background: #fde7e9; border: 1px solid #d13438; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
+.empty { color: #605e5c; padding: 24px 0; }
+table.matrix { border-collapse: collapse; width: 100%; }
+table.matrix th, table.matrix td { border: 1px solid #edebe9; padding: 6px 10px; text-align: right; white-space: nowrap; }
+table.matrix th:first-child, table.matrix td:first-child { text-align: left; }
+table.matrix thead th { background: #f3f2f1; position: sticky; top: 0; }
+tr.person-row { cursor: pointer; }
+tr.person-row:hover { background: #f3f2f1; }
+td.total { font-weight: 600; }
+tfoot td { font-weight: 600; background: #f3f2f1; }
+table.task-list { width: 100%; border-collapse: collapse; }
+table.task-list td { border: none; border-bottom: 1px solid #f3f2f1; color: #605e5c; text-align: left; }
