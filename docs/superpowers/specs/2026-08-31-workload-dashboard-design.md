@@ -79,7 +79,11 @@ webpack, Jest.
 ## Error handling
 
 - A project that fails to load (403/404/timeout) is skipped; the dashboard still
-  renders and shows a warning banner listing skipped projects.
+  renders and shows a warning banner listing skipped projects with the reason
+  each one failed. The failure reason is kept per project (not swallowed), and
+  logged to the console, so an admin can tell a permissions problem from a bug.
+- When *every* project fails, that is a systemic failure (expired token, server
+  down), not partial success: the UI shows an error, not an empty matrix.
 - Empty result (no tasks in the window) renders an explicit empty state, not a
   blank table.
 - Missing `OriginalEstimate` / `CompletedWork` values count as 0.
