@@ -24,8 +24,8 @@ Target: Azure DevOps Server `[17.0,)` (2022+), on-prem. Repo:
 
 ## Screen
 
-- Toolbar: date-window picker (default: the current two weeks) and a name
-  substring filter.
+- Toolbar: date-window picker (default: the current two weeks, computed in UTC
+  so the default is deterministic across timezones) and a name substring filter.
 - Matrix table:
   - rows — specialists (everyone who has at least one matching Task);
   - columns — projects that produced at least one matching Task;
@@ -45,7 +45,10 @@ Target: Azure DevOps Server `[17.0,)` (2022+), on-prem. Repo:
    dates are ignored.
 3. Per project with matching iterations: run WIQL
    `WorkItemType = 'Task' AND AssignedTo <> '' AND State <> 'Removed' AND
-   (IterationPath UNDER <path1> OR ...)`, then batch-read fields:
+   (IterationPath = <path1> OR ...)` — exact path match, not `UNDER`, so a dated
+   release node that overlaps the window does not drag in its child sprints that
+   lie outside the window (each dated node is judged by its own dates). Then
+   batch-read fields:
    `System.AssignedTo`, `System.Title`, `System.State`, `System.IterationPath`,
    `Microsoft.VSTS.Scheduling.OriginalEstimate`,
    `Microsoft.VSTS.Scheduling.CompletedWork`.
