@@ -9,7 +9,7 @@
   "categories": ["Boards"],
   "targets": [{ "id": "Microsoft.TeamFoundation.Server", "version": "[17.0,)" }],
   "icons": { "default": "images/icon.png" },
-  "scopes": ["vso.work", "vso.project", "vso.identity"],
+  "scopes": ["vso.work", "vso.project", "vso.identity", "vso.extension_data", "vso.extension_data_write"],
   "contributions": [
     {
       "id": "workload-dashboard-hub",

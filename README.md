@@ -71,6 +71,11 @@ transitively).
   explicit error instead of the denial sentence, so an admin can still get in and fix
   it. This never falls back to per-browser storage — a per-browser fallback would let
   anyone self-authorise — and it never fails open.
+- **Changing `scopes` in `vss-extension.json`** (as this release does, adding
+  `vso.extension_data`/`vso.extension_data_write` so the allow-list can actually be read
+  and written) forces Azure DevOps Server to re-prompt for authorisation the next time the
+  extension is updated in a collection — expect, and warn collection administrators about,
+  a re-authorisation prompt when upgrading an on-prem install.
 
 `vss-extension.json` also declares a `ms.vss-web.control-constraint` so a denied user's
 Boards navigation can hide the Workload hub entirely on hosts that honour it; this has

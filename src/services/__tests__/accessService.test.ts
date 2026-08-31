@@ -50,29 +50,30 @@ describe('AccessService.searchIdentities', () => {
       { id: 'u2', name: 'u2', kind: 'user' },
     ]);
   });
+
+  it('captures the descriptor field from the identities search response onto each entry', async () => {
+    const api = fakeApi({
+      get: () => ({
+        value: [{ id: 'g1', displayName: 'Team A', isContainer: true, descriptor: 'vssgp.Team-A-descriptor' }],
+      }),
+    });
+    const results = await new AccessService(api, fakeStore()).searchIdentities('team');
+    expect(results).toEqual([{ id: 'g1', name: 'Team A', kind: 'group', descriptor: 'vssgp.Team-A-descriptor' }]);
+  });
 });
 
-describe('AccessService.getUserGroupIds', () => {
-  it('resolves the transitive memberOf descriptors to group ids', async () => {
+describe('AccessService.getUserGroupDescriptors', () => {
+  it('returns the memberOf descriptors verbatim from a single identities call (no per-group round trip)', async () => {
     const paths: string[] = [];
     const api = fakeApi({
       get: (path) => {
         paths.push(path);
-        if (path.includes('identityIds=user-1')) {
-          return { value: [{ id: 'user-1', memberOf: ['desc-a', 'desc-b'] }] };
-        }
-        if (path.includes('identityIds=desc-a')) {
-          return { value: [{ id: 'group-a' }] };
-        }
-        if (path.includes('identityIds=desc-b')) {
-          return { value: [{ id: 'group-b' }] };
-        }
-        throw new Error(`unexpected path: ${path}`);
+        return { value: [{ id: 'user-1', memberOf: ['desc-a', 'desc-b'] }] };
       },
     });
-    const ids = await new AccessService(api, fakeStore()).getUserGroupIds('user-1');
-    expect(ids.sort()).toEqual(['group-a', 'group-b']);
-    expect(paths[0]).toBe('/_apis/identities?identityIds=user-1&queryMembership=Expanded&api-version=6.0');
+    const descriptors = await new AccessService(api, fakeStore()).getUserGroupDescriptors('user-1');
+    expect(descriptors).toEqual(['desc-a', 'desc-b']);
+    expect(paths).toEqual(['/_apis/identities?identityIds=user-1&queryMembership=Expanded&api-version=6.0']);
   });
 
   it('returns an empty array when the identity has no memberships, without extra calls', async () => {
@@ -83,45 +84,32 @@ describe('AccessService.getUserGroupIds', () => {
         return { value: [{ id: 'user-1' }] };
       },
     });
-    const ids = await new AccessService(api, fakeStore()).getUserGroupIds('user-1');
-    expect(ids).toEqual([]);
+    const descriptors = await new AccessService(api, fakeStore()).getUserGroupDescriptors('user-1');
+    expect(descriptors).toEqual([]);
     expect(paths).toHaveLength(1);
   });
 });
 
 describe('AccessService.isCollectionAdmin', () => {
-  it('is true when the user is a member of Project Collection Administrators', async () => {
+  it('is true when a memberOf descriptor carries the well-known admin SID suffix, from a single call', async () => {
+    const paths: string[] = [];
     const api = fakeApi({
       get: (path) => {
-        if (path.includes('filterValue=Project')) {
-          return { value: [{ id: 'pca-1', providerDisplayName: 'Project Collection Administrators', isContainer: true }] };
-        }
-        if (path.includes('identityIds=user-1')) {
-          return { value: [{ id: 'user-1', memberOf: ['desc-pca'] }] };
-        }
-        if (path.includes('identityIds=desc-pca')) {
-          return { value: [{ id: 'pca-1' }] };
-        }
-        throw new Error(`unexpected path: ${path}`);
+        paths.push(path);
+        return { value: [{ id: 'user-1', memberOf: ['vssgp.SomeOtherGroup', 'Microsoft.TeamFoundation.Identity;S-1-9-1551374245-1-0-0-0-0-0-0-0-0-1'] }] };
       },
     });
     expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(true);
+    expect(paths).toHaveLength(1);
   });
 
-  it('is false when the admin group cannot be found', async () => {
-    const api = fakeApi({ get: () => ({ value: [] }) });
+  it('is false when no memberOf descriptor carries the admin suffix', async () => {
+    const api = fakeApi({ get: () => ({ value: [{ id: 'user-1', memberOf: ['vssgp.SomeOtherGroup'] }] }) });
     expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(false);
   });
 
-  it('is false when the user does not belong to the admin group', async () => {
-    const api = fakeApi({
-      get: (path) => {
-        if (path.includes('filterValue=Project')) {
-          return { value: [{ id: 'pca-1', providerDisplayName: 'Project Collection Administrators', isContainer: true }] };
-        }
-        return { value: [{ id: 'user-1' }] };
-      },
-    });
+  it('is false when the identity has no memberships', async () => {
+    const api = fakeApi({ get: () => ({ value: [{ id: 'user-1' }] }) });
     expect(await new AccessService(api, fakeStore()).isCollectionAdmin('user-1')).toBe(false);
   });
 });
@@ -135,11 +123,45 @@ describe('AccessService.readList', () => {
     expect(list).toEqual({ entries: [{ id: 'u1', name: 'Alice', kind: 'user' }] });
   });
 
-  it('returns an empty list when the document does not exist yet (404)', async () => {
+  it('returns null (not an empty list) for a bare 404 with no typeKey, since Azure DevOps Server also returns 404 for scope/permission failures', async () => {
     const store = fakeStore({
       getDocument: async () => {
         const e = new Error('not found') as Error & { status: number };
         e.status = 404;
+        throw e;
+      },
+    });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns null for an error whose message merely says "not found", without a recognised typeKey', async () => {
+    const store = fakeStore({
+      getDocument: async () => {
+        throw new Error('Resource not found');
+      },
+    });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns an empty list only for a genuine DocumentNotFound typeKey', async () => {
+    const store = fakeStore({
+      getDocument: async () => {
+        const e = new Error('document missing') as Error & { serverError: { typeKey: string } };
+        e.serverError = { typeKey: 'DocumentNotFoundException' };
+        throw e;
+      },
+    });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toEqual({ entries: [] });
+  });
+
+  it('also recognises a DocumentDoesNotExist typeKey at the top level of the error', async () => {
+    const store = fakeStore({
+      getDocument: async () => {
+        const e = new Error('document missing') as Error & { typeKey: string };
+        e.typeKey = 'DocumentDoesNotExistException';
         throw e;
       },
     });
@@ -159,6 +181,34 @@ describe('AccessService.readList', () => {
 
   it('returns null when no data manager is available at all', async () => {
     const list = await new AccessService(fakeApi({}), null).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns null when the document has no entries field at all (malformed)', async () => {
+    const store = fakeStore({ getDocument: async () => ({ id: 'access-control' }) });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns null when entries is not an array (malformed)', async () => {
+    const store = fakeStore({ getDocument: async () => ({ entries: 'not-an-array' }) });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns null when an entry has no string id (malformed)', async () => {
+    const store = fakeStore({
+      getDocument: async () => ({ entries: [{ name: 'Alice', kind: 'user' }] }),
+    });
+    const list = await new AccessService(fakeApi({}), store).readList();
+    expect(list).toBeNull();
+  });
+
+  it('returns null when an entry has a non-string id (malformed)', async () => {
+    const store = fakeStore({
+      getDocument: async () => ({ entries: [{ id: 42, name: 'Alice', kind: 'user' }] }),
+    });
+    const list = await new AccessService(fakeApi({}), store).readList();
     expect(list).toBeNull();
   });
 });
