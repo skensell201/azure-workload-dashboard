@@ -28,12 +28,23 @@ describe('AccessPanel', () => {
     expect(getAllByText('Team A').length).toBeGreaterThan(0);
   });
 
-  it('shows an explicit storage error and starts with an empty editable list when the list cannot be read', async () => {
-    const { getByText } = render(
+  it('disables Save and hides the reassuring empty-list status when the initial read fails', async () => {
+    const { getByText, queryByText } = render(
       <AccessPanel service={fakeService({ readList: async () => null })} onClose={() => {}} />
     );
-    await waitFor(() => expect(getByText(/could not be read/)).toBeTruthy());
-    expect(getByText(/Everyone has access/)).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        getByText('Could not read the current access list. Saving is disabled so the stored list is not overwritten.')
+      ).toBeTruthy()
+    );
+    expect(queryByText(/Everyone has access/)).toBeNull();
+    expect((getByText('Save') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('keeps Save enabled when the initial read succeeds with a genuinely empty list', async () => {
+    const { getByText } = render(<AccessPanel service={fakeService({ readList: async () => ({ entries: [] }) })} onClose={() => {}} />);
+    await waitFor(() => expect(getByText(/Everyone has access/)).toBeTruthy());
+    expect((getByText('Save') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('searching renders results with an Add action', async () => {
@@ -63,6 +74,48 @@ describe('AccessPanel', () => {
     fireEvent.click(getByText('Save'));
 
     await waitFor(() => expect(saved).toEqual({ entries: [{ id: 'u2', name: 'Bob', kind: 'user' }] }));
+  });
+
+  it('shows an error instead of stale results when a search fails', async () => {
+    const { getByPlaceholderText, getByText, queryByText } = render(
+      <AccessPanel
+        service={fakeService({
+          searchIdentities: async () => {
+            throw new Error('identities service unavailable');
+          },
+        })}
+        onClose={() => {}}
+      />
+    );
+    fireEvent.change(getByPlaceholderText('Search identities…'), { target: { value: 'bob' } });
+    await waitFor(() => expect(getByText(/identities service unavailable/)).toBeTruthy());
+    expect(queryByText('Bob')).toBeNull();
+  });
+
+  it('does not let a slow earlier search overwrite the results of a newer one', async () => {
+    let resolveFirst: (value: AccessEntry[]) => void = () => {};
+    const first = new Promise<AccessEntry[]>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const service = fakeService({
+      searchIdentities: async (q) => {
+        if (q === 'al') return first;
+        return [{ id: 'b1', name: 'Bob', kind: 'user' }];
+      },
+    });
+    const { getByPlaceholderText, getByText, queryByText } = render(<AccessPanel service={service} onClose={() => {}} />);
+    const input = getByPlaceholderText('Search identities…');
+
+    fireEvent.change(input, { target: { value: 'al' } });
+    fireEvent.change(input, { target: { value: 'bob' } });
+    await waitFor(() => expect(getByText('Bob')).toBeTruthy());
+
+    resolveFirst([{ id: 'a1', name: 'Alice', kind: 'user' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(getByText('Bob')).toBeTruthy();
+    expect(queryByText('Alice')).toBeNull();
   });
 
   it('removing an entry drops it from the pending list', async () => {
