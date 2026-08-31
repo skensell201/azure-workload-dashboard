@@ -1,0 +1,25 @@
+{
+  "manifestVersion": 1,
+  "id": "workload-dashboard",
+  "publisher": "iksoftware",
+  "version": "1.0.0",
+  "name": "Workload Dashboard",
+  "description": "Specialist workload across all projects: Original Estimate and Completed Work hours per sprint window in one matrix.",
+  "content": { "details": { "path": "overview.md" } },
+  "categories": ["Boards"],
+  "targets": [{ "id": "Microsoft.TeamFoundation.Server", "version": "[17.0,)" }],
+  "icons": { "default": "images/icon.png" },
+  "scopes": ["vso.work", "vso.project"],
+  "contributions": [
+    {
+      "id": "workload-dashboard-hub",
+      "type": "ms.vss-web.hub",
+      "targets": ["ms.vss-work-web.work-hub-group"],
+      "properties": { "name": "Workload", "uri": "dist/hub.html" }
+    }
+  ],
+  "files": [
+    { "path": "dist", "addressable": true },
+    { "path": "images", "addressable": true }
+  ]
+}
