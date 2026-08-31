@@ -8,10 +8,18 @@ import { ProjectService } from './services/ProjectService';
 import { IterationService } from './services/IterationService';
 import { WorkItemService } from './services/WorkItemService';
 import { LoadOrchestrator } from './services/LoadOrchestrator';
+import { colorSchemeOf } from './services/theme';
 import { App, describeError } from './components/App';
+
+/** Runs after SDK.init, once the host has injected its theme variables. */
+function followHostTheme(): void {
+  const neutralZero = getComputedStyle(document.documentElement).getPropertyValue('--palette-neutral-0');
+  document.documentElement.style.colorScheme = colorSchemeOf(neutralZero);
+}
 
 async function start(): Promise<void> {
   await SDK.init();
+  followHostTheme();
   const loc = await SDK.getService<ILocationService>(CommonServiceIds.LocationService);
   const baseUrl = (await loc.getServiceLocation()).replace(/\/$/, '');
   const token = await SDK.getAccessToken();

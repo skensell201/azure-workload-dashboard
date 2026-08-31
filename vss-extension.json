@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "workload-dashboard",
   "publisher": "iksoftware",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Workload Dashboard",
   "description": "Specialist workload across all projects: Original Estimate and Completed Work hours per sprint window in one matrix.",
   "content": { "details": { "path": "overview.md" } },

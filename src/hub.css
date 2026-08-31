@@ -1,23 +1,73 @@
-body { font-family: "Segoe UI", sans-serif; font-size: 14px; margin: 0; color: #201f1e; }
+/* Colors come from the Azure DevOps theme variables the SDK injects, so the hub
+   follows the light and dark themes. Palette variables hold RGB triplets, not
+   colors, hence the rgba(var(...), a) form; the fallbacks are the light theme. */
+:root {
+  --wd-text: var(--text-primary-color, #201f1e);
+  --wd-muted: var(--text-secondary-color, #605e5c);
+  --wd-bg: rgba(var(--palette-neutral-0, "255, 255, 255"), 1);
+  --wd-shade: rgba(var(--palette-neutral-4, "247, 246, 244"), 1);
+  --wd-hover: rgba(var(--palette-neutral-8, "234, 234, 234"), 1);
+  --wd-border: rgba(var(--palette-neutral-8, "234, 234, 234"), 1);
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+  margin: 0;
+  color: var(--wd-text);
+  background: var(--wd-bg);
+}
+
 .app { padding: 16px; }
 .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.toolbar input[type="text"] { padding: 4px 8px; min-width: 220px; }
-.hint { color: #605e5c; }
-.progress { color: #605e5c; margin: 8px 0; }
-.loaded-window { color: #605e5c; margin: 8px 0; }
-.loaded-window.stale { color: #a4262c; }
-.warning { background: #fff4ce; border: 1px solid #ffb900; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
-.error-box { background: #fde7e9; border: 1px solid #d13438; padding: 8px 12px; margin: 8px 0; border-radius: 2px; }
-.empty { color: #605e5c; padding: 24px 0; }
+.toolbar input, .toolbar button {
+  font: inherit;
+  color: var(--wd-text);
+  background: var(--wd-bg);
+  border: 1px solid var(--wd-border);
+  border-radius: 2px;
+  padding: 4px 8px;
+}
+.toolbar button { cursor: pointer; background: var(--wd-shade); }
+.toolbar button:disabled { cursor: default; opacity: 0.6; }
+.toolbar input[type="text"] { min-width: 220px; }
+
+.hint, .progress, .loaded-window, .empty { color: var(--wd-muted); }
+.progress, .loaded-window { margin: 8px 0; }
+.empty { padding: 24px 0; }
+.loaded-window.stale { color: rgba(var(--palette-error-text, "205, 74, 69"), 1); }
+
+/* Tinted over the theme background so the boxes stay legible in both themes. */
+.warning, .error-box { padding: 8px 12px; margin: 8px 0; border-radius: 2px; border: 1px solid; }
+.warning { background: rgba(255, 185, 0, 0.12); border-color: rgba(255, 185, 0, 0.8); }
+.error-box { background: rgba(209, 52, 56, 0.12); border-color: rgba(209, 52, 56, 0.8); }
+
 .matrix-scroll { overflow: auto; max-height: 70vh; }
 table.matrix { border-collapse: collapse; width: 100%; }
-table.matrix th, table.matrix td { border: 1px solid #edebe9; padding: 6px 10px; text-align: right; white-space: nowrap; }
+table.matrix th, table.matrix td {
+  border: 1px solid var(--wd-border);
+  padding: 6px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
 table.matrix th:first-child, table.matrix td:first-child { text-align: left; }
-table.matrix thead th { background: #f3f2f1; position: sticky; top: 0; }
+table.matrix thead th {
+  background: var(--wd-shade);
+  position: sticky;
+  top: 0;
+  /* Collapsed borders don't travel with a sticky cell, so rows would slide under it. */
+  box-shadow: inset 0 -1px 0 var(--wd-border);
+}
 tr.person-row { cursor: pointer; }
-tr.person-row:hover { background: #f3f2f1; }
-.twisty { color: #605e5c; }
+tr.person-row:hover { background: var(--wd-hover); }
+.twisty { color: var(--wd-muted); }
 td.total { font-weight: 600; }
-tfoot td { font-weight: 600; background: #f3f2f1; }
+tfoot td { font-weight: 600; background: var(--wd-shade); }
 table.task-list { width: 100%; border-collapse: collapse; }
-table.task-list td { border: none; border-bottom: 1px solid #f3f2f1; color: #605e5c; text-align: left; }
+table.task-list td {
+  border: none;
+  border-bottom: 1px solid var(--wd-border);
+  color: var(--wd-muted);
+  text-align: left;
+}
+table.task-list a { color: var(--communication-foreground, #0078d4); }
