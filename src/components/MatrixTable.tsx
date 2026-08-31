@@ -54,8 +54,16 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
         <thead>
           <tr>
             <th>Person</th>
-            {matrix.projects.map((p) => <th key={p}>{p}</th>)}
-            <th>Total</th>
+            {matrix.projects.map((p) => (
+              <th key={p}>
+                {p}
+                <div className="col-legend">planned / done</div>
+              </th>
+            ))}
+            <th>
+              Total
+              <div className="col-legend">planned / done</div>
+            </th>
           </tr>
         </thead>
         <tbody>

@@ -75,7 +75,9 @@ export function App({
           onChange={(e) => setFilter(e.target.value)}
         />
         {result && matrix && <ExportButtons matrix={matrix} window={result.window} />}
-        <span className="hint">cell: Original Estimate / Completed, hours</span>
+        <span className="hint">
+          each cell: planned (Original Estimate) / done (Completed Work), in hours
+        </span>
       </div>
       {progress && <div className="progress">Loaded {progress.done} of {progress.total} projects</div>}
       {error && <div className="error-box">{error}</div>}

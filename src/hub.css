@@ -58,6 +58,7 @@ table.matrix thead th {
   /* Collapsed borders don't travel with a sticky cell, so rows would slide under it. */
   box-shadow: inset 0 -1px 0 var(--wd-border);
 }
+.col-legend { font-weight: 400; font-size: 11px; color: var(--wd-muted); margin-top: 2px; }
 tr.person-row { cursor: pointer; }
 tr.person-row:hover { background: var(--wd-hover); }
 .twisty { color: var(--wd-muted); }

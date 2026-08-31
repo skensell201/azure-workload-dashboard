@@ -26,6 +26,12 @@ describe('MatrixTable', () => {
     expect(getAllByText('56 / 24').length).toBeGreaterThan(0);
   });
 
+  it('spells out what the two numbers mean under every hours column', () => {
+    const { getAllByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
+    // One per project column plus the Total column.
+    expect(getAllByText('planned / done')).toHaveLength(matrix.projects.length + 1);
+  });
+
   it('expands a row into the task list on click', () => {
     const { getByText, queryByText } = render(<MatrixTable matrix={matrix} baseUrl="http://s" />);
     expect(queryByText('Fix bug')).toBeNull();
