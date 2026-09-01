@@ -36,17 +36,23 @@ async function start(): Promise<void> {
   // page is ready before SDK.register() for the constraint below ever runs.
   await SDK.init({ loaded: false });
   followHostTheme();
+
+  // Registered before any await: the host may ask the constraint long before the decision
+  // has been resolved, and an unanswered constraint hides the hub. Defaulting to true means
+  // uncertainty never hides Workload from someone entitled to it -- the in-hub gate still
+  // refuses to show data, so failing open here costs visibility of a tab, not data.
+  let constraintAllows = true;
+  const isConstraintMode = SDK.getContributionId() === CONSTRAINT_CONTRIBUTION_ID;
+  try {
+    SDK.register(CONSTRAINT_CONTRIBUTION_ID, () => ({ isMatch: () => constraintAllows }));
+  } catch (e) {
+    console.error('Workload Dashboard: failed to register the access constraint:', e);
+  }
+
   const loc = await SDK.getService<ILocationService>(CommonServiceIds.LocationService);
   const baseUrl = (await loc.getServiceLocation()).replace(/\/$/, '');
   const token = await SDK.getAccessToken();
   const api = new RestApiClient(baseUrl, token);
-  const orchestrator = new LoadOrchestrator({
-    projects: new ProjectService(api),
-    iterations: new IterationService(api),
-    workItems: new WorkItemService(api),
-    teams: new TeamService(api),
-  });
-
   // Never fall back to browser storage here: a per-browser fallback would let anyone
   // self-authorise. If the data manager can't be obtained, the store stays null and
   // AccessService.readList() reports the list as unreadable (fail closed).
@@ -61,20 +67,19 @@ async function start(): Promise<void> {
 
   const user = SDK.getUser();
   const { decision, list } = await resolveAccess({ user, accessService });
+  constraintAllows = decision.allowed;
 
-  if (SDK.getContributionId() === CONSTRAINT_CONTRIBUTION_ID) {
-    try {
-      SDK.register(CONSTRAINT_CONTRIBUTION_ID, () => ({ isMatch: () => decision.allowed }));
-    } catch (e) {
-      // Registration failing must not prevent notifyLoadSucceeded below (see I6) --
-      // an on-prem host that doesn't support this contribution type is a harmless no-op
-      // here; the in-hub AccessGate below is the real enforcement either way.
-      console.error('Workload Dashboard: failed to register the access constraint:', e);
-    }
+  if (isConstraintMode) {
     await SDK.notifyLoadSucceeded();
     return;
   }
 
+  const orchestrator = new LoadOrchestrator({
+    projects: new ProjectService(api),
+    iterations: new IterationService(api),
+    workItems: new WorkItemService(api),
+    teams: new TeamService(api),
+  });
   ReactDOM.render(
     <AccessGate
       decision={decision}

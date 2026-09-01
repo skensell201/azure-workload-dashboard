@@ -30,6 +30,18 @@ describe('AccessGate', () => {
     expect(queryByText('Refresh')).toBeNull();
   });
 
+  it('names the reason it refused, so a denial can be diagnosed without server logs', () => {
+    const { getByText } = render(
+      <AccessGate
+        decision={{ allowed: false, reason: 'not-listed' }}
+        listUnreadable={false}
+        orchestrator={stubOrchestrator()}
+        baseUrl="http://s"
+      />
+    );
+    expect(getByText(/not-listed/)).toBeTruthy();
+  });
+
   it('renders a distinct error, not the generic denial sentence, when the list could not be read', () => {
     const { getByText, queryByText } = render(
       <AccessGate

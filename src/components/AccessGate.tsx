@@ -39,7 +39,13 @@ export function AccessGate({
         </div>
       );
     }
-    return <div className="denied">You do not have access to Workload. Ask a collection administrator to grant it.</div>;
+    return (
+      <div className="denied">
+        You do not have access to Workload. Ask a collection administrator to grant it.
+        {/* Named so a wrong denial can be diagnosed from the screen rather than server logs. */}
+        <div className="hint">reason: {decision.reason}</div>
+      </div>
+    );
   }
 
   const isAdmin = decision.reason === 'admin';
