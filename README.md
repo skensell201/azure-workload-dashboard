@@ -79,11 +79,11 @@ transitively).
   missing document, so ordinary users may see the denial message until an administrator
   opens the Access panel once and uses **Create a new access list**. Doing that on day one
   is the recommended first step regardless.
-- **Changing `scopes` in `vss-extension.json`** (as this release does, adding
-  `vso.extension_data`/`vso.extension_data_write` so the allow-list can actually be read
-  and written) forces Azure DevOps Server to re-prompt for authorisation the next time the
-  extension is updated in a collection — expect, and warn collection administrators about,
-  a re-authorisation prompt when upgrading an on-prem install.
+- **Do not add `vso.extension_data` / `vso.extension_data_write` to `scopes`.** Azure
+  DevOps Server rejects the package outright with *"Scope is not valid. Cannot mix uri
+  based and modern scopes"*. The extension data manager the allow-list is stored through
+  works without them on-prem, as the sibling `AzureWorkItems_Export` extension has done
+  for years with the same three scopes this one declares.
 
 `vss-extension.json` also declares a `ms.vss-web.control-constraint` so a denied user's
 Boards navigation can hide the Workload hub entirely on hosts that honour it; this has
