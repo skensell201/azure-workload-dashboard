@@ -17,7 +17,14 @@ function sameId(a: string, b: string): boolean {
 }
 
 /** Admin-only: search identities and edit the allow-list that gates the hub. */
-export function AccessPanel({ service, onClose }: { service: AccessPanelService; onClose: () => void }): JSX.Element {
+export function AccessPanel({
+  service,
+  onClose,
+}: {
+  service: AccessPanelService;
+  /** Omitted on the collection-settings page, where the panel is the whole page. */
+  onClose?: () => void;
+}): JSX.Element {
   const [entries, setEntries] = useState<AccessEntry[]>([]);
   // Distinct from a genuinely empty list (see C3): when the initial read fails, saving
   // must be disabled outright so admins never overwrite a list they never actually saw.
@@ -128,7 +135,7 @@ export function AccessPanel({ service, onClose }: { service: AccessPanelService;
     <div className="access-panel">
       <div className="access-panel-header">
         <h3>Access</h3>
-        <button onClick={onClose}>Close</button>
+        {onClose && <button onClick={onClose}>Close</button>}
       </div>
       {listUnreadable ? (
         <div className="error-box">

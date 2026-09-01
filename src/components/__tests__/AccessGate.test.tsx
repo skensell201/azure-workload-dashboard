@@ -3,7 +3,6 @@ import { render } from '@testing-library/react';
 import { AccessGate } from '../AccessGate';
 import { LoadOrchestrator, LoadResult } from '../../services/LoadOrchestrator';
 import { DateWindow } from '../../models/types';
-import { AccessPanelService } from '../AccessPanel';
 
 function stubOrchestrator(): LoadOrchestrator {
   const load = async (win: DateWindow): Promise<LoadResult> => ({
@@ -17,14 +16,6 @@ function stubOrchestrator(): LoadOrchestrator {
   return { load } as unknown as LoadOrchestrator;
 }
 
-function stubAccessService(): AccessPanelService {
-  return {
-    readList: async () => ({ entries: [] }),
-    searchIdentities: async () => [],
-    writeList: async () => undefined,
-  };
-}
-
 describe('AccessGate', () => {
   it('renders exactly the required denial sentence when the user is not listed', () => {
     const { getByText, queryByText } = render(
@@ -33,7 +24,6 @@ describe('AccessGate', () => {
         listUnreadable={false}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
     expect(getByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeTruthy();
@@ -47,7 +37,6 @@ describe('AccessGate', () => {
         listUnreadable={true}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
     expect(getByText(/could not be read/)).toBeTruthy();
@@ -61,7 +50,6 @@ describe('AccessGate', () => {
         listUnreadable={false}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
     expect(
@@ -72,32 +60,29 @@ describe('AccessGate', () => {
     expect(queryByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeNull();
   });
 
-  it('renders the app without an Access button for an allowed non-admin', () => {
-    const { getByText, queryByText } = render(
+  it('renders the app for an allowed non-admin', () => {
+    const { getByText } = render(
       <AccessGate
         decision={{ allowed: true, reason: 'unrestricted' }}
         listUnreadable={false}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
     expect(getByText('Refresh')).toBeTruthy();
-    expect(queryByText('Access')).toBeNull();
   });
 
-  it('renders the app with an Access button for an admin', () => {
-    const { getByText } = render(
+  it('never offers list editing in the hub — that lives in collection settings', () => {
+    const { queryByText } = render(
       <AccessGate
         decision={{ allowed: true, reason: 'admin' }}
         listUnreadable={false}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
-    expect(getByText('Refresh')).toBeTruthy();
-    expect(getByText('Access')).toBeTruthy();
+    expect(queryByText('Access')).toBeNull();
+    expect(queryByText('Save')).toBeNull();
   });
 
   it('surfaces the storage warning to an admin who is let in despite an unreadable list', () => {
@@ -107,7 +92,6 @@ describe('AccessGate', () => {
         listUnreadable={true}
         orchestrator={stubOrchestrator()}
         baseUrl="http://s"
-        accessService={stubAccessService()}
       />
     );
     expect(getByText(/could not be read/)).toBeTruthy();

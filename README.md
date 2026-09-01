@@ -62,8 +62,10 @@ transitively).
   list, and are the only ones who can manage it.
 - A user is let in if they are listed by identity id, or are a transitive member of a
   listed group, or are a collection administrator.
-- Collection administrators see an **Access** button in the toolbar that opens a panel
-  to search identities and add or remove entries; **Save** writes the list.
+- The list is edited in **Collection Settings → Extensions → Workload Access**: search
+  identities, `Add`, `Remove`, then `Save`. Azure DevOps only shows that page to users who
+  can administer the collection, so the page sits where every other extension's settings
+  do rather than inside the dashboard.
 - A denied user sees one sentence, never an empty table or a stack trace:
   *"You do not have access to Workload. Ask a collection administrator to grant it."*
 - **If the allow-list itself cannot be read** (the extension's data storage is
@@ -77,8 +79,8 @@ transitively).
 - **On a fresh install** the allow-list document does not exist yet. Whether that reads
   as "absent" (everyone allowed) or as "unreadable" depends on how this server reports a
   missing document, so ordinary users may see the denial message until an administrator
-  opens the Access panel once and uses **Create a new access list**. Doing that on day one
-  is the recommended first step regardless.
+  opens **Workload Access** once and uses **Create a new access list**. Doing that on day
+  one is the recommended first step regardless.
 - **Do not add `vso.extension_data` / `vso.extension_data_write` to `scopes`.** Azure
   DevOps Server rejects the package outright with *"Scope is not valid. Cannot mix uri
   based and modern scopes"*. The extension data manager the allow-list is stored through

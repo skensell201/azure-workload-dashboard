@@ -81,7 +81,6 @@ async function start(): Promise<void> {
       listUnreadable={list === null}
       orchestrator={orchestrator}
       baseUrl={baseUrl}
-      accessService={accessService}
     />,
     document.getElementById('root')
   );

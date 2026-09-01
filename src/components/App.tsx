@@ -7,7 +7,6 @@ import { peopleOf, selectTasks, selectRoster } from '../services/people';
 import { MatrixTable } from './MatrixTable';
 import { ExportButtons } from './ExportButtons';
 import { PeoplePicker } from './PeoplePicker';
-import { AccessPanel, AccessPanelService } from './AccessPanel';
 
 export function describeError(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -16,15 +15,11 @@ export function describeError(e: unknown): string {
 export function App({
   orchestrator,
   baseUrl,
-  isAdmin,
-  accessService,
   accessWarning,
 }: {
   orchestrator: LoadOrchestrator;
   baseUrl: string;
-  /** Shows the Access toolbar button and panel; both no-ops unless accessService is also given. */
-  isAdmin?: boolean;
-  accessService?: AccessPanelService;
+  /** Shown when membership could not be verified; the allow-list itself is edited in collection settings. */
   accessWarning?: string;
 }): JSX.Element {
   const [win, setWin] = useState<DateWindow>(defaultWindow(new Date()));
@@ -35,7 +30,6 @@ export function App({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [includeRoster, setIncludeRoster] = useState(true);
-  const [accessPanelOpen, setAccessPanelOpen] = useState(false);
 
   async function load(w: DateWindow): Promise<void> {
     if (!w.start || !w.end || w.start > w.end) {
@@ -109,17 +103,11 @@ export function App({
           Include people with no tasks
         </label>
         {result && matrix && <ExportButtons matrix={matrix} window={result.window} />}
-        {isAdmin && accessService && (
-          <button onClick={() => setAccessPanelOpen(!accessPanelOpen)}>Access</button>
-        )}
         <span className="hint">
           each cell: planned (Original Estimate) / done (Completed Work), in hours
         </span>
       </div>
       {accessWarning && <div className="warning">{accessWarning}</div>}
-      {accessPanelOpen && accessService && (
-        <AccessPanel service={accessService} onClose={() => setAccessPanelOpen(false)} />
-      )}
       {pickerOpen && people.length > 0 && (
         <PeoplePicker
           people={people}

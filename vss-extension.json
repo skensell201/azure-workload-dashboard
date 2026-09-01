@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "workload-dashboard",
   "publisher": "iksoftware",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "name": "Workload Dashboard",
   "description": "Specialist workload across all projects: Original Estimate and Completed Work hours per sprint window in one matrix.",
   "content": { "details": { "path": "overview.md" } },
@@ -23,6 +23,16 @@
       "type": "ms.vss-web.control-constraint",
       "targets": ["ms.vss-web.control-constraint"],
       "properties": { "uri": "dist/hub.html" }
+    },
+    {
+      "id": "workload-access-admin",
+      "type": "ms.vss-web.hub",
+      "targets": ["ms.vss-web.collection-admin-hub-group"],
+      "properties": {
+        "name": "Workload Access",
+        "uri": "dist/admin.html",
+        "icon": "images/icon.png"
+      }
     }
   ],
   "files": [

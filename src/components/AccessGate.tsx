@@ -2,28 +2,25 @@ import React from 'react';
 import { AccessDecision } from '../services/access';
 import { LoadOrchestrator } from '../services/LoadOrchestrator';
 import { App } from './App';
-import { AccessPanelService } from './AccessPanel';
 
 const STORAGE_WARNING =
-  'The access list could not be read — showing an empty list here too. Changes may not save until storage is available.';
+  'The access list could not be read, so the restriction is not being applied. Open Collection Settings → Extensions → Workload Access to check it.';
 
 /**
  * Sync render switch for the hub: denial sentence, unreadable-list error, or the app
- * (with the Access panel available to admins). All async work — resolving the user,
- * the decision, the list — happens upstream in hub.tsx.
+ * All async work — resolving the user, the decision, the list — happens upstream in
+ * hub.tsx; the allow-list itself is edited from collection settings, not from here.
  */
 export function AccessGate({
   decision,
   listUnreadable,
   orchestrator,
   baseUrl,
-  accessService,
 }: {
   decision: AccessDecision;
   listUnreadable: boolean;
   orchestrator: LoadOrchestrator;
   baseUrl: string;
-  accessService: AccessPanelService;
 }): JSX.Element {
   if (!decision.allowed) {
     if (decision.reason === 'list-unreadable') {
@@ -50,8 +47,6 @@ export function AccessGate({
     <App
       orchestrator={orchestrator}
       baseUrl={baseUrl}
-      isAdmin={isAdmin}
-      accessService={isAdmin ? accessService : undefined}
       accessWarning={isAdmin && listUnreadable ? STORAGE_WARNING : undefined}
     />
   );

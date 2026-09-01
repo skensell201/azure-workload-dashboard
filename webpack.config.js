@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: { hub: './src/hub.tsx' },
+  entry: { hub: './src/hub.tsx', admin: './src/admin.tsx' },
   output: {
     path: path.resolve(__dirname, 'dist'),
     // Content-hashed filename so a new build is never served from a stale browser/CDN cache.
@@ -19,5 +19,9 @@ module.exports = {
       { test: /\.css$/, use: ['style-loader', 'css-loader'] },
     ],
   },
-  plugins: [new HtmlWebpackPlugin({ template: 'src/hub.html', filename: 'hub.html', inject: 'body' })],
+  // Each page gets only its own bundle; sharing one would load the dashboard on the settings page.
+  plugins: [
+    new HtmlWebpackPlugin({ template: 'src/hub.html', filename: 'hub.html', inject: 'body', chunks: ['hub'] }),
+    new HtmlWebpackPlugin({ template: 'src/admin.html', filename: 'admin.html', inject: 'body', chunks: ['admin'] }),
+  ],
 };
