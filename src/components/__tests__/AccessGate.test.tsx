@@ -26,7 +26,7 @@ describe('AccessGate', () => {
         baseUrl="http://s"
       />
     );
-    expect(getByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeTruthy();
+    expect(getByText('You do not have access to Workload. Please contact your company\u2019s technical support.')).toBeTruthy();
     expect(queryByText('Refresh')).toBeNull();
   });
 
@@ -52,7 +52,7 @@ describe('AccessGate', () => {
       />
     );
     expect(getByText(/could not be read/)).toBeTruthy();
-    expect(queryByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeNull();
+    expect(queryByText('You do not have access to Workload. Please contact your company\u2019s technical support.')).toBeNull();
   });
 
   it('renders a distinct sentence directing the user to a collection administrator when membership could not be checked', () => {
@@ -66,10 +66,10 @@ describe('AccessGate', () => {
     );
     expect(
       getByText(
-        'Your group membership could not be checked, so access to Workload could not be confirmed. Ask a collection administrator to add you directly.'
+        'Your group membership could not be checked, so access to Workload could not be confirmed. Please contact your company\u2019s technical support.'
       )
     ).toBeTruthy();
-    expect(queryByText('You do not have access to Workload. Ask a collection administrator to grant it.')).toBeNull();
+    expect(queryByText('You do not have access to Workload. Please contact your company\u2019s technical support.')).toBeNull();
   });
 
   it('renders the app for an allowed non-admin', () => {

@@ -66,8 +66,11 @@ transitively).
   identities, `Add`, `Remove`, then `Save`. Azure DevOps only shows that page to users who
   can administer the collection, so the page sits where every other extension's settings
   do rather than inside the dashboard.
-- A denied user sees one sentence, never an empty table or a stack trace:
-  *"You do not have access to Workload. Ask a collection administrator to grant it."*
+- **The Workload tab stays visible to everyone.** A denied user opens it and sees one
+  sentence, never an empty table or a stack trace: *"You do not have access to Workload.
+  Please contact your company's technical support."* Under it, the reason code
+  (`not-listed`, `membership-unverified`, `list-unreadable`) so support can tell a real
+  denial from a misconfiguration without reading server logs.
 - **If the allow-list itself cannot be read** (the extension's data storage is
   unavailable), the hub denies everyone except collection administrators and shows an
   explicit error instead of the denial sentence, so an admin can still get in and fix
@@ -87,10 +90,12 @@ transitively).
   works without them on-prem, as the sibling `AzureWorkItems_Export` extension has done
   for years with the same three scopes this one declares.
 
-`vss-extension.json` also declares a `ms.vss-web.control-constraint` so a denied user's
-Boards navigation can hide the Workload hub entirely on hosts that honour it; this has
-not been verified against this on-prem host and may simply be ignored. Either way,
-**hiding the hub is UI-level gating, not a security boundary**: the extension reads data
+An earlier version tried to hide the hub from the Boards navigation with a
+`ms.vss-web.control-constraint`. On this on-prem host the constraint answered "no" for
+everyone, including collection administrators, so the tab vanished for all of them. It has
+been removed: the tab is always listed, and access is enforced when the page opens. That is
+no weaker, because **gating the hub was never a security boundary** anyway — the extension
+reads data
 with the viewer's own access token, so anyone with project access can call the same REST
 APIs directly regardless of what the hub shows or hides. Real confidentiality comes from
 project permissions in Azure DevOps itself, not from this extension.

@@ -26,8 +26,9 @@ export function AccessGate({
     if (decision.reason === 'list-unreadable') {
       return (
         <div className="error-box">
-          The access list could not be read, so access cannot be verified. Ask a collection
-          administrator to check the extension&apos;s data storage and try again.
+          The access list could not be read, so access cannot be verified. Please contact your
+          company&rsquo;s technical support.
+          <div className="hint">reason: {decision.reason}</div>
         </div>
       );
     }
@@ -35,13 +36,14 @@ export function AccessGate({
       return (
         <div className="error-box">
           Your group membership could not be checked, so access to Workload could not be confirmed.
-          Ask a collection administrator to add you directly.
+          Please contact your company&rsquo;s technical support.
+          <div className="hint">reason: {decision.reason}</div>
         </div>
       );
     }
     return (
       <div className="denied">
-        You do not have access to Workload. Ask a collection administrator to grant it.
+        You do not have access to Workload. Please contact your company&rsquo;s technical support.
         {/* Named so a wrong denial can be diagnosed from the screen rather than server logs. */}
         <div className="hint">reason: {decision.reason}</div>
       </div>

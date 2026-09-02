@@ -15,14 +15,6 @@ import { AccessGate } from './components/AccessGate';
 import { AccessService, AccessDocumentStore } from './services/AccessService';
 import { resolveAccess } from './services/resolveAccess';
 
-/**
- * Full id of the ms.vss-web.control-constraint contribution declared in vss-extension.json,
- * used only to tell "the host loaded this page to evaluate the hub-visibility constraint"
- * apart from "the host loaded this page to render the hub". Harmless if the on-prem host
- * does not honour control-constraint at all — the in-hub gate below is the real enforcement.
- */
-const CONSTRAINT_CONTRIBUTION_ID = 'iksoftware.workload-dashboard.workload-access-constraint';
-
 /** Runs after SDK.init, once the host has injected its theme variables. */
 function followHostTheme(): void {
   const neutralZero = getComputedStyle(document.documentElement).getPropertyValue('--palette-neutral-0');
@@ -30,24 +22,10 @@ function followHostTheme(): void {
 }
 
 async function start(): Promise<void> {
-  // loaded: false so the host does not consider this page ready (and does not honour the
-  // navigation constraint below) until this function explicitly calls
-  // notifyLoadSucceeded() -- see I6. The default (loaded: true) would tell the host the
-  // page is ready before SDK.register() for the constraint below ever runs.
+  // loaded: false keeps the host's own overlay up until this function has decided what to
+  // render, so a viewer never sees an empty page before the access check has finished.
   await SDK.init({ loaded: false });
   followHostTheme();
-
-  // Registered before any await: the host may ask the constraint long before the decision
-  // has been resolved, and an unanswered constraint hides the hub. Defaulting to true means
-  // uncertainty never hides Workload from someone entitled to it -- the in-hub gate still
-  // refuses to show data, so failing open here costs visibility of a tab, not data.
-  let constraintAllows = true;
-  const isConstraintMode = SDK.getContributionId() === CONSTRAINT_CONTRIBUTION_ID;
-  try {
-    SDK.register(CONSTRAINT_CONTRIBUTION_ID, () => ({ isMatch: () => constraintAllows }));
-  } catch (e) {
-    console.error('Workload Dashboard: failed to register the access constraint:', e);
-  }
 
   const loc = await SDK.getService<ILocationService>(CommonServiceIds.LocationService);
   const baseUrl = (await loc.getServiceLocation()).replace(/\/$/, '');
@@ -67,12 +45,6 @@ async function start(): Promise<void> {
 
   const user = SDK.getUser();
   const { decision, list } = await resolveAccess({ user, accessService });
-  constraintAllows = decision.allowed;
-
-  if (isConstraintMode) {
-    await SDK.notifyLoadSucceeded();
-    return;
-  }
 
   const orchestrator = new LoadOrchestrator({
     projects: new ProjectService(api),
@@ -89,7 +61,7 @@ async function start(): Promise<void> {
     />,
     document.getElementById('root')
   );
-  // Only after registration/first render does the host learn the page is ready (I6).
+  // Only after the first render does the host learn the page is ready.
   await SDK.notifyLoadSucceeded();
 }
 
