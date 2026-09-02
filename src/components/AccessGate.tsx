@@ -51,11 +51,17 @@ export function AccessGate({
   }
 
   const isAdmin = decision.reason === 'admin';
+  // Without this, "the restriction is configured but this page reads an empty list" is
+  // indistinguishable from "everyone is meant to see this" — both just show the data.
+  const unrestrictedNotice =
+    decision.reason === 'unrestricted'
+      ? 'The access list is empty, so everyone can open Workload. Add entries in Collection Settings → Extensions → Workload Access.'
+      : undefined;
   return (
     <App
       orchestrator={orchestrator}
       baseUrl={baseUrl}
-      accessWarning={isAdmin && listUnreadable ? STORAGE_WARNING : undefined}
+      accessWarning={isAdmin && listUnreadable ? STORAGE_WARNING : unrestrictedNotice}
     />
   );
 }

@@ -35,6 +35,7 @@ export function AccessPanel({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [storedCount, setStoredCount] = useState<number | null | undefined>(undefined);
   // Guards against an out-of-order response: only the most recently issued search may
   // apply its results (see M3) -- a slow earlier search resolving after a newer one must
   // not clobber what the user is currently looking at.
@@ -119,6 +120,10 @@ export function AccessPanel({
     try {
       await service.writeList({ entries });
       setSaved(true);
+      // Read back rather than trusting the write: if this page and the hub end up looking
+      // at different documents, the count below is the only place that shows it.
+      const stored = await service.readList();
+      setStoredCount(stored === null ? null : stored.entries.length);
     } catch (e) {
       setSaveError(describeError(e));
     } finally {
@@ -187,6 +192,13 @@ export function AccessPanel({
           Save
         </button>
         {saved && <span className="hint">Saved.</span>}
+        {storedCount !== undefined && (
+          <span className="hint">
+            {storedCount === null
+              ? 'Storage could not be read back, so it is unknown what the hub will see.'
+              : `Storage now holds ${storedCount} entries — that is what the Workload hub reads.`}
+          </span>
+        )}
         {saveError && <div className="error-box">{saveError}</div>}
       </div>
     </div>

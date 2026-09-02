@@ -115,6 +115,52 @@ describe('AccessPanel', () => {
     expect((getByText('Add') as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('reads the list back after saving and reports what storage actually holds', async () => {
+    let stored: AccessList | null = { entries: [] };
+    const { getByText, getByPlaceholderText } = render(
+      <AccessPanel
+        service={fakeService({
+          readList: async () => stored,
+          searchIdentities: async () => [{ id: 'u1', name: 'Alice', kind: 'user' }],
+          writeList: async (list) => {
+            stored = list;
+          },
+        })}
+        onClose={() => {}}
+      />
+    );
+    await waitFor(() => expect(getByText(/Everyone has access/)).toBeTruthy());
+
+    fireEvent.change(getByPlaceholderText('Search identities…'), { target: { value: 'ali' } });
+    await waitFor(() => expect(getByText('Add')).toBeTruthy());
+    fireEvent.click(getByText('Add'));
+    fireEvent.click(getByText('Save'));
+
+    await waitFor(() => expect(getByText(/Storage now holds 1/)).toBeTruthy());
+  });
+
+  it('reports a save that storage did not keep', async () => {
+    const { getByText, getByPlaceholderText } = render(
+      <AccessPanel
+        service={fakeService({
+          // Write silently lands somewhere this page cannot read back.
+          readList: async () => ({ entries: [] }),
+          searchIdentities: async () => [{ id: 'u1', name: 'Alice', kind: 'user' }],
+          writeList: async () => undefined,
+        })}
+        onClose={() => {}}
+      />
+    );
+    await waitFor(() => expect(getByText(/Everyone has access/)).toBeTruthy());
+
+    fireEvent.change(getByPlaceholderText('Search identities…'), { target: { value: 'ali' } });
+    await waitFor(() => expect(getByText('Add')).toBeTruthy());
+    fireEvent.click(getByText('Add'));
+    fireEvent.click(getByText('Save'));
+
+    await waitFor(() => expect(getByText(/Storage now holds 0/)).toBeTruthy());
+  });
+
   it('searching renders results with an Add action', async () => {
     const results: AccessEntry[] = [{ id: 'u2', name: 'Bob', kind: 'user' }];
     const { getByPlaceholderText, getByText } = render(

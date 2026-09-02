@@ -72,6 +72,30 @@ describe('AccessGate', () => {
     expect(queryByText('You do not have access to Workload. Please contact your company\u2019s technical support.')).toBeNull();
   });
 
+  it('says out loud when the list is empty, so an unapplied restriction is visible', () => {
+    const { getByText } = render(
+      <AccessGate
+        decision={{ allowed: true, reason: 'unrestricted' }}
+        listUnreadable={false}
+        orchestrator={stubOrchestrator()}
+        baseUrl="http://s"
+      />
+    );
+    expect(getByText(/access list is empty/i)).toBeTruthy();
+  });
+
+  it('stays quiet about the list when access came from a real entry', () => {
+    const { queryByText } = render(
+      <AccessGate
+        decision={{ allowed: true, reason: 'user' }}
+        listUnreadable={false}
+        orchestrator={stubOrchestrator()}
+        baseUrl="http://s"
+      />
+    );
+    expect(queryByText(/access list is empty/i)).toBeNull();
+  });
+
   it('renders the app for an allowed non-admin', () => {
     const { getByText } = render(
       <AccessGate
