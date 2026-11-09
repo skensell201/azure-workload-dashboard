@@ -1,6 +1,7 @@
-import { matrixToTable, tasksToTable, toCsv, exportBaseName } from '../ExportService';
+import { matrixToTable, noTasksToTable, tasksToTable, toCsv, toXlsxBlob, exportBaseName } from '../ExportService';
 import { buildMatrix } from '../Aggregation';
 import { TaskItem } from '../../models/types';
+import * as XLSX from 'xlsx';
 
 function task(over: Partial<TaskItem>): TaskItem {
   return {
@@ -34,22 +35,57 @@ describe('matrixToTable', () => {
       'A — Completed',
       'B — Original Estimate',
       'B — Completed',
+      'Projects without tasks',
     ]);
   });
 
   it('emits numbers, not formatted strings', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[0]).toEqual(['User One', 24, 6, 8, 2, 16, 4]);
+    expect(t.rows[0]).toEqual(['User One', 24, 6, 8, 2, 16, 4, '']);
   });
 
   it('leaves a project the person has no tasks in blank rather than zero', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[1]).toEqual(['User Two', 40, 20, null, null, 40, 20]);
+    expect(t.rows[1]).toEqual(['User Two', 40, 20, null, null, 40, 20, '']);
   });
 
   it('appends the totals row', () => {
     const t = matrixToTable(matrix);
-    expect(t.rows[t.rows.length - 1]).toEqual(['Total', 64, 26, 8, 2, 56, 24]);
+    expect(t.rows[t.rows.length - 1]).toEqual(['Total', 64, 26, 8, 2, 56, 24, '']);
+  });
+
+  it('lists the projects a team member was not planned in, without touching the hours columns', () => {
+    const m = buildMatrix(
+      [task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })],
+      [{ key: 'u1', name: 'User One', projects: ['A', 'B', 'C'] }]
+    );
+    const t = matrixToTable(m);
+    expect(t.headers[t.headers.length - 1]).toBe('Projects without tasks');
+    expect(t.rows[0][t.rows[0].length - 1]).toBe('B, C');
+    // The hours columns stay numbers: 8 and 2 for A, blanks for B and C.
+    expect(t.rows[0].slice(1, 7)).toEqual([8, 2, 8, 2, null, null]);
+  });
+});
+
+describe('noTasksToTable', () => {
+  it('lists one row per person and project they are in the team of but have no task in', () => {
+    const m = buildMatrix(
+      [
+        task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' }),
+        task({ id: 2, assigneeKey: 'u2', assigneeName: 'User Two', project: 'A' }),
+      ],
+      [
+        { key: 'u1', name: 'User One', projects: ['A', 'B'] },
+        { key: 'u2', name: 'User Two', projects: ['A'] },
+      ]
+    );
+    const t = noTasksToTable(m);
+    expect(t.headers).toEqual(['Person', 'Project']);
+    expect(t.rows).toEqual([['User One', 'B']]);
+  });
+
+  it('is empty when nobody was left unplanned', () => {
+    expect(noTasksToTable(matrix).rows).toEqual([]);
   });
 });
 
@@ -93,5 +129,19 @@ describe('toCsv', () => {
 describe('exportBaseName', () => {
   it('names the file after the loaded window', () => {
     expect(exportBaseName({ start: '2026-08-31', end: '2026-09-13' })).toBe('workload-2026-08-31_2026-09-13');
+  });
+});
+
+describe('toXlsxBlob', () => {
+  it('writes the matrix, the tasks and the unplanned people into three sheets', async () => {
+    const blob = toXlsxBlob(matrix);
+    const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    const wb = XLSX.read(Buffer.from(buffer), { type: 'buffer' });
+    expect(wb.SheetNames).toEqual(['Workload', 'Tasks', 'No tasks']);
   });
 });

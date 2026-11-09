@@ -1,4 +1,4 @@
-import { buildMatrix } from '../Aggregation';
+import { buildMatrix, projectsWithoutTasks } from '../Aggregation';
 import { TaskItem } from '../../models/types';
 import { RosterPerson } from '../people';
 
@@ -136,5 +136,19 @@ describe('buildMatrix', () => {
     const m = buildMatrix([], roster);
     expect(m.rows[0].memberProjects).toEqual(['A', 'B']);
     expect(m.projects).toEqual(['A', 'B']);
+  });
+});
+
+describe('projectsWithoutTasks', () => {
+  it('lists only the member projects the person has no task in, sorted', () => {
+    const roster: RosterPerson[] = [{ key: 'u1', name: 'User One', projects: ['C', 'A', 'B'] }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'B' })], roster);
+    expect(projectsWithoutTasks(m.rows[0])).toEqual(['A', 'C']);
+  });
+
+  it('is empty for a person who has tasks in every project they belong to', () => {
+    const roster: RosterPerson[] = [{ key: 'u1', name: 'User One', projects: ['A'] }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })], roster);
+    expect(projectsWithoutTasks(m.rows[0])).toEqual([]);
   });
 });

@@ -11,3 +11,7 @@ A project column reads `Original Estimate / Completed Work` hours for the tasks
 planned there, `no tasks` for someone who is in that project's team but was not
 planned on the sprint, and `—` for someone outside the project — so a manager
 can scan one column to see who was left off the sprint.
+
+The Excel export keeps the hours numeric and carries the same information
+beside them: a `Projects without tasks` column and a `No tasks` sheet listing
+every person and project they were left unplanned in.

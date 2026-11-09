@@ -103,3 +103,11 @@ export function buildMatrix(tasks: TaskItem[], roster: RosterPerson[] = []): Mat
   }
   return { projects, rows, projectTotals, grandTotal };
 }
+
+/**
+ * The projects where the person is in the team but has no task in the window — the
+ * projects the matrix marks "no tasks". Sorted, so the exports stay stable.
+ */
+export function projectsWithoutTasks(row: MatrixRow): string[] {
+  return row.memberProjects.filter((p) => !row.cells.has(p)).sort((a, b) => a.localeCompare(b));
+}

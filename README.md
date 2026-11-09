@@ -57,22 +57,28 @@ when it has tasks in the window **or** people in its teams, so a project nobody
 was planned in stays visible instead of disappearing from the matrix. Such a
 column totals `0 / 0` in the footer.
 
-Both the marks and the extra rows come from the same roster, so they appear and
-disappear with the **Include people with no tasks** checkbox. The exports are
-unchanged by this: their project columns stay numeric, and a project a person
-has no tasks in is left blank rather than zero.
+The marks and the extra rows come from the same roster, so they appear and
+disappear with the **Include people with no tasks** checkbox.
 
 ## Export
 
 **CSV** writes the matrix exactly as displayed, including the name filter, with a
 UTF-8 BOM so Excel opens Cyrillic names correctly. **Excel** writes a workbook with
-two sheets: `Workload` (the same matrix) and `Tasks` (every task behind it — id,
-title, person, project, iteration, state, hours), so the numbers can be pivoted.
+three sheets: `Workload` (the same matrix), `Tasks` (every task behind it — id,
+title, person, project, iteration, state, hours), and `No tasks` (one row per
+person and project they are in the team of but were not planned in), so the
+numbers can be pivoted.
 
 In both formats each project becomes two numeric columns, `— Original Estimate`
 and `— Completed`, rather than one `48 / 32` string, so the values can be summed.
 A project a person has no tasks in is left blank rather than zero. Files are named
 after the loaded window, e.g. `workload-2026-08-31_2026-09-13.xlsx`.
+
+**The "no tasks" mark is exported too.** It is information, not a number, so it
+does not go into the hours columns: the `Workload` sheet ends with a
+`Projects without tasks` column naming the projects a person was left unplanned in
+(`EDO, GIS BIOM`), and the `No tasks` sheet spells the same thing out row by row.
+The hours columns stay numeric and summable; the mark travels beside them.
 
 ## Access
 
