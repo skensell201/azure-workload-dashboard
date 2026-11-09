@@ -37,6 +37,31 @@ only roster on-prem exposes without Graph API scopes. Unchecking the box
 hides those rows immediately and, from the next Refresh onward, skips the
 extra per-project team calls entirely, which makes the load faster.
 
+### The "no tasks" mark
+
+Being in a project's team and being planned on its sprint are two different
+things, and the matrix now says so. A cell reads:
+
+- `8 / 2` — the person has tasks in that project;
+- **`no tasks`** — the person is in that project's team, but nothing of theirs
+  was planned in the window. This is the mark a manager scans a project column
+  for to see who was left off the sprint;
+- `—` — the person is not in that project's team at all.
+
+A person with tasks in one project and none in another gets the mark in the
+second project's column, even though their `Total` is not zero. A task with no
+hours entered still counts as a task, so it shows `0 / 0` rather than the mark.
+
+The team roster is also what decides the columns: a project earns a column
+when it has tasks in the window **or** people in its teams, so a project nobody
+was planned in stays visible instead of disappearing from the matrix. Such a
+column totals `0 / 0` in the footer.
+
+Both the marks and the extra rows come from the same roster, so they appear and
+disappear with the **Include people with no tasks** checkbox. The exports are
+unchanged by this: their project columns stay numeric, and a project a person
+has no tasks in is left blank rather than zero.
+
 ## Export
 
 **CSV** writes the matrix exactly as displayed, including the name filter, with a

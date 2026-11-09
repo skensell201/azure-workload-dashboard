@@ -52,4 +52,36 @@ describe('MatrixTable', () => {
     const { getAllByText } = render(<MatrixTable matrix={m} baseUrl="http://s" />);
     expect(getAllByText('15.5 / 0.9').length).toBeGreaterThan(0);
   });
+
+  it('says "no tasks" for a project the person is in the team of but has no tasks in', () => {
+    const m = buildMatrix(
+      [task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })],
+      [{ key: 'u1', name: 'User One', projects: ['A', 'B'] }]
+    );
+    const { getAllByText, getByText } = render(<MatrixTable matrix={m} baseUrl="http://s" />);
+    expect(getAllByText('no tasks')).toHaveLength(1);
+    // The mark belongs to the project the person was not planned in, not to the one with hours.
+    const cell = getAllByText('no tasks')[0];
+    expect(cell.closest('td')?.previousElementSibling?.textContent).toBe('8 / 2');
+  });
+
+  it('keeps the dash for a project the person is not in the team of', () => {
+    const m = buildMatrix(
+      [
+        task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' }),
+        task({ id: 2, assigneeKey: 'u2', assigneeName: 'User Two', project: 'B' }),
+      ],
+      [{ key: 'u1', name: 'User One', projects: ['A'] }]
+    );
+    const { container, queryAllByText } = render(<MatrixTable matrix={m} baseUrl="http://s" />);
+    // User One is not in B's team and has no task there: that cell stays a dash.
+    const row = [...container.querySelectorAll('tr.person-row')].find((tr) =>
+      tr.textContent?.includes('User One')
+    )!;
+    const cells = [...row.querySelectorAll('td')].map((td) => td.textContent);
+    expect(cells[1]).toBe('8 / 2');
+    expect(cells[2]).toBe('8 / 2');
+    expect(cells[3]).toBe('—');
+    expect(queryAllByText('no tasks')).toHaveLength(0);
+  });
 });

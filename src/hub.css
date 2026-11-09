@@ -93,6 +93,8 @@ tr.person-row { cursor: pointer; }
 tr.person-row:hover { background: var(--wd-hover); }
 .twisty { color: var(--wd-muted); }
 td.total { font-weight: 600; }
+/* The "no tasks" mark is information, not data: it must stay readable but never compete with the hours. */
+td.no-tasks { color: var(--wd-muted); font-style: italic; font-size: 12px; }
 tfoot td { font-weight: 600; background: var(--wd-shade); }
 table.task-list { width: 100%; border-collapse: collapse; }
 table.task-list td {

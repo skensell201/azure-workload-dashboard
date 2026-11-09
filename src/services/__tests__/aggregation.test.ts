@@ -1,6 +1,6 @@
 import { buildMatrix } from '../Aggregation';
 import { TaskItem } from '../../models/types';
-import { Person } from '../people';
+import { RosterPerson } from '../people';
 
 function task(over: Partial<TaskItem>): TaskItem {
   return {
@@ -67,7 +67,7 @@ describe('buildMatrix', () => {
   });
 
   it('seeds a zero row for a roster person with no tasks', () => {
-    const roster: Person[] = [{ key: 'u3', name: 'Nobody Has Tasks' }];
+    const roster: RosterPerson[] = [{ key: 'u3', name: 'Nobody Has Tasks', projects: [] }];
     const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One' })], roster);
     const row = m.rows.find((r) => r.key === 'u3')!;
     expect(row).toBeDefined();
@@ -78,22 +78,22 @@ describe('buildMatrix', () => {
   });
 
   it('does not duplicate a roster person who also has tasks', () => {
-    const roster: Person[] = [{ key: 'u1', name: 'User One' }];
+    const roster: RosterPerson[] = [{ key: 'u1', name: 'User One', projects: ['A'] }];
     const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', originalEstimate: 8, completedWork: 2 })], roster);
     expect(m.rows.filter((r) => r.key === 'u1')).toHaveLength(1);
     expect(m.rows.find((r) => r.key === 'u1')!.total).toEqual({ oe: 8, completed: 2 });
   });
 
   it('does not let roster people introduce new project columns', () => {
-    const roster: Person[] = [{ key: 'u3', name: 'Nobody Has Tasks' }];
+    const roster: RosterPerson[] = [{ key: 'u3', name: 'Nobody Has Tasks', projects: [] }];
     const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })], roster);
     expect(m.projects).toEqual(['A']);
   });
 
   it('sorts roster-only rows alphabetically alongside people with tasks', () => {
-    const roster: Person[] = [
-      { key: 'u3', name: 'Bob' },
-      { key: 'u4', name: 'Yara' },
+    const roster: RosterPerson[] = [
+      { key: 'u3', name: 'Bob', projects: [] },
+      { key: 'u4', name: 'Yara', projects: [] },
     ];
     const m = buildMatrix(
       [
@@ -108,5 +108,33 @@ describe('buildMatrix', () => {
   it('behaves identically to today with no roster passed', () => {
     const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One' })]);
     expect(m.rows).toHaveLength(1);
+  });
+
+  it('remembers the projects a person is a team member of, even with tasks elsewhere', () => {
+    const roster: RosterPerson[] = [{ key: 'u1', name: 'User One', projects: ['A', 'B'] }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })], roster);
+    const row = m.rows.find((r) => r.key === 'u1')!;
+    expect(row.memberProjects).toEqual(['A', 'B']);
+    // The project with no tasks has no cell of its own — that is what "no tasks" means.
+    expect(row.cells.has('B')).toBe(false);
+  });
+
+  it('gives a project whose team has people but no tasks a column of its own', () => {
+    const roster: RosterPerson[] = [{ key: 'u3', name: 'Nobody Has Tasks', projects: ['Idle'] }];
+    const m = buildMatrix([task({ assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })], roster);
+    expect(m.projects).toEqual(['A', 'Idle']);
+    // The footer needs a total for that column, or the footer's cell would be missing.
+    expect(m.projectTotals.get('Idle')).toEqual({ oe: 0, completed: 0 });
+    expect(m.grandTotal).toEqual({ oe: 0, completed: 0 });
+  });
+
+  it('merges the membership of a person who is in several projects', () => {
+    const roster: RosterPerson[] = [
+      { key: 'u1', name: 'User One', projects: ['A'] },
+      { key: 'u1', name: 'User One', projects: ['B'] },
+    ];
+    const m = buildMatrix([], roster);
+    expect(m.rows[0].memberProjects).toEqual(['A', 'B']);
+    expect(m.projects).toEqual(['A', 'B']);
   });
 });

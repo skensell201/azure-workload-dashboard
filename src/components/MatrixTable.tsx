@@ -76,7 +76,17 @@ export function MatrixTable({ matrix, baseUrl }: { matrix: Matrix; baseUrl: stri
                 <td className="total">{fmt(r.total)}</td>
                 {matrix.projects.map((p) => {
                   const cell = r.cells.get(p);
-                  return <td key={p}>{cell ? fmt(cell) : '—'}</td>;
+                  if (cell) return <td key={p}>{fmt(cell)}</td>;
+                  // In the project's team but nothing planned in the window — a manager
+                  // scanning the column has to see that as different from "not in the project".
+                  if (r.memberProjects.includes(p)) {
+                    return (
+                      <td key={p} className="no-tasks" title="In the project team, no tasks in this window">
+                        no tasks
+                      </td>
+                    );
+                  }
+                  return <td key={p}>—</td>;
                 })}
               </tr>
               {expanded.has(r.key) && <TaskRows row={r} colSpan={colSpan} baseUrl={baseUrl} />}

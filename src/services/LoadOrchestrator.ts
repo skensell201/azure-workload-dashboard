@@ -3,7 +3,7 @@ import { ProjectService } from './ProjectService';
 import { IterationService } from './IterationService';
 import { WorkItemService } from './WorkItemService';
 import { TeamService } from './TeamService';
-import { Person } from './people';
+import { RosterPerson } from './people';
 import { parseAssignee } from './assignee';
 import { runBatched } from '../utils/batch';
 
@@ -27,7 +27,7 @@ export interface LoadResult {
   allProjectsFailed: boolean;
   window: DateWindow;
   projectCount: number;
-  roster: Person[];
+  roster: RosterPerson[];
 }
 
 interface Deps {
@@ -78,17 +78,30 @@ export class LoadOrchestrator {
   }
 
   /** A project's member list is a courtesy, not core data: a fetch failure here must never mark the project skipped. */
-  private async loadRoster(projects: NamedRef[]): Promise<Person[]> {
+  private async loadRoster(projects: NamedRef[]): Promise<RosterPerson[]> {
     const perProject = await runBatched(projects, async (p: NamedRef) => {
       try {
-        return await this.deps.teams.getProjectMembers(p.id);
+        const members = await this.deps.teams.getProjectMembers(p.id);
+        // Remember which project each member belongs to: that is what makes "no tasks" sayable.
+        return members.map((m) => ({ ...m, projects: [p.name] }));
       } catch (e) {
         console.warn(`Workload Dashboard: could not load members for project ${p.name}`, e);
-        return [] as Person[];
+        return [] as RosterPerson[];
       }
     });
-    const byKey = new Map<string, Person>();
-    for (const members of perProject) for (const m of members) byKey.set(m.key, m);
+    const byKey = new Map<string, RosterPerson>();
+    for (const members of perProject) {
+      for (const m of members) {
+        const existing = byKey.get(m.key);
+        if (!existing) {
+          byKey.set(m.key, { key: m.key, name: m.name, projects: [...m.projects] });
+          continue;
+        }
+        for (const project of m.projects) {
+          if (!existing.projects.includes(project)) existing.projects.push(project);
+        }
+      }
+    }
     return [...byKey.values()];
   }
 

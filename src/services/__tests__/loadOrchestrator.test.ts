@@ -119,7 +119,7 @@ describe('LoadOrchestrator', () => {
     expect(seen[seen.length - 1]).toEqual([2, 2]);
   });
 
-  it('returns the roster deduped across projects', async () => {
+  it('returns the roster deduped across projects, with the projects each person belongs to', async () => {
     const deps = makeDeps({
       getProjectMembers: async (projectId: string) =>
         projectId === '1'
@@ -128,9 +128,9 @@ describe('LoadOrchestrator', () => {
     });
     const result = await new LoadOrchestrator(deps as never).load(win, () => {});
     expect([...result.roster].sort((a, b) => a.key.localeCompare(b.key))).toEqual([
-      { key: 'u1', name: 'User One' },
-      { key: 'u2', name: 'User Two' },
-      { key: 'u3', name: 'User Three' },
+      { key: 'u1', name: 'User One', projects: ['A'] },
+      { key: 'u2', name: 'User Two', projects: ['A', 'B'] },
+      { key: 'u3', name: 'User Three', projects: ['B'] },
     ]);
   });
 
@@ -156,7 +156,7 @@ describe('LoadOrchestrator', () => {
     const result = await new LoadOrchestrator(deps as never).load(win, () => {});
     expect(result.tasks.map((t) => t.project).sort()).toEqual(['A', 'B']);
     expect(result.skippedProjects).toEqual([]);
-    expect(result.roster).toEqual([{ key: 'u2', name: 'User Two' }]);
+    expect(result.roster).toEqual([{ key: 'u2', name: 'User Two', projects: ['B'] }]);
   });
 
   it('skips the member calls entirely and returns an empty roster when includeRoster is false', async () => {

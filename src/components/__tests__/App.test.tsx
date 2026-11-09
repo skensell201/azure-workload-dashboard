@@ -118,7 +118,7 @@ describe('App', () => {
     const { getByText, getAllByText } = renderApp({
       tasks: twoPeople,
       projectCount: 2,
-      roster: [{ key: 'u9', name: 'Nobody Has Tasks' }],
+      roster: [{ key: 'u9', name: 'Nobody Has Tasks', projects: [] }],
     });
     await waitFor(() => expect(getByText('Nobody Has Tasks')).toBeTruthy());
     expect(getAllByText('0 / 0').length).toBeGreaterThan(0);
@@ -134,7 +134,7 @@ describe('App', () => {
         allProjectsFailed: false,
         projectCount: 2,
         window: win,
-        roster: [{ key: 'u9', name: 'Nobody Has Tasks' }],
+        roster: [{ key: 'u9', name: 'Nobody Has Tasks', projects: [] }],
       };
     };
     const orchestrator = { load } as unknown as LoadOrchestrator;
@@ -146,5 +146,31 @@ describe('App', () => {
 
     expect(queryByText('Nobody Has Tasks')).toBeNull();
     expect(loadCalls).toBe(1);
+  });
+
+  it('marks a team member who has no tasks in the project as "no tasks"', async () => {
+    const { getByText, getAllByText } = renderApp({
+      tasks: [task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })],
+      projectCount: 1,
+      roster: [{ key: 'u1', name: 'User One', projects: ['A', 'B'] }],
+    });
+    await waitFor(() => expect(getByText('User One')).toBeTruthy());
+
+    // A: hours. B: in the team, nothing planned. Only one "no tasks" mark in the row.
+    expect(getAllByText('no tasks')).toHaveLength(1);
+  });
+
+  it('drops the "no tasks" marks when the roster is switched off', async () => {
+    const { getByText, queryAllByText, getByLabelText } = renderApp({
+      tasks: [task({ id: 1, assigneeKey: 'u1', assigneeName: 'User One', project: 'A' })],
+      projectCount: 1,
+      roster: [{ key: 'u1', name: 'User One', projects: ['A', 'B'] }],
+    });
+    await waitFor(() => expect(getByText('User One')).toBeTruthy());
+    expect(queryAllByText('no tasks')).toHaveLength(1);
+
+    fireEvent.click(getByLabelText('Include people with no tasks'));
+
+    expect(queryAllByText('no tasks')).toHaveLength(0);
   });
 });
